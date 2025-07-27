@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, ExternalLink, Trash2, Search, X, Tag } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { FileText, Plus, ExternalLink, Trash2, Search, X, Tag, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +30,7 @@ export default function Documents() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [companySelectOpen, setCompanySelectOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -263,22 +267,64 @@ export default function Documents() {
               </div>
               <div>
                 <Label htmlFor="company">Company (Optional)</Label>
-                <select
-                  id="company"
-                  className="w-full px-3 py-2 border border-input rounded-md"
-                  value={newDocument.company_id || ''}
-                  onChange={(e) => setNewDocument(prev => ({ 
-                    ...prev, 
-                    company_id: e.target.value || null 
-                  }))}
-                >
-                  <option value="">Global (All Users)</option>
-                  {companies.map(company => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
+                <Popover open={companySelectOpen} onOpenChange={setCompanySelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={companySelectOpen}
+                      className="w-full justify-between"
+                    >
+                      {newDocument.company_id
+                        ? companies.find(company => company.id === newDocument.company_id)?.name
+                        : "Global (All Users)"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search companies..." />
+                      <CommandList>
+                        <CommandEmpty>No company found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value=""
+                            onSelect={() => {
+                              setNewDocument(prev => ({ ...prev, company_id: null }));
+                              setCompanySelectOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                newDocument.company_id === null ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            Global (All Users)
+                          </CommandItem>
+                          {companies.map((company) => (
+                            <CommandItem
+                              key={company.id}
+                              value={company.name}
+                              onSelect={() => {
+                                setNewDocument(prev => ({ ...prev, company_id: company.id }));
+                                setCompanySelectOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newDocument.company_id === company.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {company.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               {canManageContent && (
                 <div>

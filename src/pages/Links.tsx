@@ -5,7 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Link as LinkIcon, Plus, ExternalLink, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link as LinkIcon, Plus, ExternalLink, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,13 +23,20 @@ interface Link {
   created_at: string;
 }
 
+interface Company {
+  id: string;
+  name: string;
+}
+
 export default function Links() {
   const { user, memberships, profile } = useAuth();
   const { trackLinkClick } = useAnalytics();
   const { toast } = useToast();
   const [links, setLinks] = useState<Link[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [companySelectOpen, setCompanySelectOpen] = useState(false);
   const [newLink, setNewLink] = useState({
     title: '',
     url: '',
@@ -58,8 +69,23 @@ export default function Links() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLinks();
+    fetchCompanies();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,8 +148,8 @@ export default function Links() {
 
   const getCompanyName = (companyId: string | null) => {
     if (!companyId) return 'Global';
-    const company = memberships?.find(m => m.company_id === companyId);
-    return company?.company?.name || 'Unknown Company';
+    const company = companies.find(c => c.id === companyId);
+    return company?.name || 'Unknown Company';
   };
 
   if (loading) {
@@ -183,22 +209,64 @@ export default function Links() {
               </div>
               <div>
                 <Label htmlFor="company">Company (Optional)</Label>
-                <select
-                  id="company"
-                  className="w-full px-3 py-2 border border-input rounded-md"
-                  value={newLink.company_id || ''}
-                  onChange={(e) => setNewLink(prev => ({ 
-                    ...prev, 
-                    company_id: e.target.value || null 
-                  }))}
-                >
-                  <option value="">Global (All Users)</option>
-                  {memberships?.map(membership => (
-                    <option key={membership.company_id} value={membership.company_id}>
-                      {membership.company?.name}
-                    </option>
-                  ))}
-                </select>
+                <Popover open={companySelectOpen} onOpenChange={setCompanySelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={companySelectOpen}
+                      className="w-full justify-between"
+                    >
+                      {newLink.company_id
+                        ? companies.find(company => company.id === newLink.company_id)?.name
+                        : "Global (All Users)"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search companies..." />
+                      <CommandList>
+                        <CommandEmpty>No company found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value=""
+                            onSelect={() => {
+                              setNewLink(prev => ({ ...prev, company_id: null }));
+                              setCompanySelectOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                newLink.company_id === null ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            Global (All Users)
+                          </CommandItem>
+                          {companies.map((company) => (
+                            <CommandItem
+                              key={company.id}
+                              value={company.name}
+                              onSelect={() => {
+                                setNewLink(prev => ({ ...prev, company_id: company.id }));
+                                setCompanySelectOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newLink.company_id === company.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {company.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
