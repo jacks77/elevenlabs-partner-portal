@@ -140,9 +140,11 @@ export default function Admin() {
       if (error) throw error;
 
       // Complete registration and create user account
+      console.log('Calling complete-registration function with registrationId:', registrationId);
       const { error: completeError } = await supabase.functions.invoke('complete-registration', {
         body: { registrationId }
       });
+      console.log('Complete registration response:', { completeError });
 
       if (completeError) {
         console.error('Error completing registration:', completeError);
