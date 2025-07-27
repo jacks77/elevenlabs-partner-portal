@@ -155,7 +155,7 @@ export default function Admin() {
       console.log('Payload:', { registrationId });
       
       const { data: functionData, error: completeError } = await supabase.functions.invoke('complete-registration', {
-        body: { registrationId }
+        body: { registrationId, timestamp: Date.now() }
       });
       
       console.log('=== FUNCTION RESPONSE ===');
