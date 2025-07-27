@@ -20,7 +20,7 @@ interface Link {
 }
 
 export default function Links() {
-  const { user, memberships } = useAuth();
+  const { user, memberships, profile } = useAuth();
   const { trackLinkClick } = useAnalytics();
   const { toast } = useToast();
   const [links, setLinks] = useState<Link[]>([]);
@@ -31,6 +31,11 @@ export default function Links() {
     url: '',
     company_id: null as string | null
   });
+
+  // Check if user is super admin or company admin
+  const isSuperAdmin = profile?.is_super_admin;
+  const isCompanyAdmin = memberships?.some(m => m.is_admin && m.is_approved);
+  const canManageContent = isSuperAdmin || isCompanyAdmin;
 
   const fetchLinks = async () => {
     try {
@@ -139,13 +144,14 @@ export default function Links() {
           </p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Link
-            </Button>
-          </DialogTrigger>
+        {canManageContent && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Link
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Link</DialogTitle>
@@ -203,6 +209,7 @@ export default function Links() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -211,14 +218,16 @@ export default function Links() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <LinkIcon className="w-8 h-8 text-primary" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(link.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {canManageContent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(link.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
               <CardTitle className="text-lg">{link.title}</CardTitle>
               <CardDescription>
@@ -247,16 +256,21 @@ export default function Links() {
           <LinkIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No links yet</h3>
           <p className="text-muted-foreground mb-4">
-            Start by adding your first quick link for easy access.
+            {canManageContent 
+              ? "Start by adding your first quick link for easy access."
+              : "Links will appear here once an admin adds them."
+            }
           </p>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Link
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          {canManageContent && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Link
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          )}
         </div>
       )}
     </div>

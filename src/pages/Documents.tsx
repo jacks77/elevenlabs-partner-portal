@@ -19,7 +19,7 @@ interface Document {
 }
 
 export default function Documents() {
-  const { user, memberships } = useAuth();
+  const { user, memberships, profile } = useAuth();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,11 @@ export default function Documents() {
     drive_url: '',
     company_id: null as string | null
   });
+
+  // Check if user is super admin or company admin
+  const isSuperAdmin = profile?.is_super_admin;
+  const isCompanyAdmin = memberships?.some(m => m.is_admin && m.is_approved);
+  const canManageContent = isSuperAdmin || isCompanyAdmin;
 
   const fetchDocuments = async () => {
     try {
@@ -132,13 +137,14 @@ export default function Documents() {
           </p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Document
-            </Button>
-          </DialogTrigger>
+        {canManageContent && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Document
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Document</DialogTitle>
@@ -196,6 +202,7 @@ export default function Documents() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -204,14 +211,16 @@ export default function Documents() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <FileText className="w-8 h-8 text-primary" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(document.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {canManageContent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(document.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
               <CardTitle className="text-lg">{document.title}</CardTitle>
               <CardDescription>
@@ -240,16 +249,21 @@ export default function Documents() {
           <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No documents yet</h3>
           <p className="text-muted-foreground mb-4">
-            Start by adding your first document or resource link.
+            {canManageContent 
+              ? "Start by adding your first document or resource link."
+              : "Documents will appear here once an admin adds them."
+            }
           </p>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Document
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          {canManageContent && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Document
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          )}
         </div>
       )}
     </div>
