@@ -139,22 +139,22 @@ export default function Admin() {
 
       if (error) throw error;
 
-      // Send invite email
-      const { error: emailError } = await supabase.functions.invoke('send-invite-email', {
+      // Complete registration and create user account
+      const { error: completeError } = await supabase.functions.invoke('complete-registration', {
         body: { registrationId }
       });
 
-      if (emailError) {
-        console.error('Error sending invite email:', emailError);
+      if (completeError) {
+        console.error('Error completing registration:', completeError);
         toast({
           variant: "destructive",
-          title: "Approval successful, but email failed",
-          description: "The registration was approved but the invite email couldn't be sent."
+          title: "Approval successful, but account creation failed",
+          description: "The registration was approved but the user account couldn't be created."
         });
       } else {
         toast({
           title: "Registration approved",
-          description: "Invite email has been sent to the user."
+          description: "User account has been created and they can now sign in."
         });
       }
 
@@ -464,7 +464,7 @@ function RegistrationCard({
             variant="success"
           >
             <UserCheck className="h-4 w-4 mr-2" />
-            Approve & Send Invite
+            Approve & Create Account
           </Button>
           <Button 
             onClick={() => onReject(registration.id)}
