@@ -18,6 +18,19 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ["Inter", "sans-serif"],
+				heading: ["Outfit", "sans-serif"],
+				body: ["Inter", "sans-serif"],
+			},
+			fontSize: {
+				'h1': ['3.5rem', { lineHeight: '1.1', fontWeight: '600' }], // 56px
+				'h2': ['2.25rem', { lineHeight: '1.2', fontWeight: '600' }], // 36px
+				'h3': ['1.5rem', { lineHeight: '1.3', fontWeight: '600' }], // 24px
+				'body': ['1.125rem', { lineHeight: '1.6', fontWeight: '400' }], // 18px
+				'body-sm': ['1rem', { lineHeight: '1.6', fontWeight: '400' }], // 16px
+				'button': ['0.875rem', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0.025em' }], // 14px
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

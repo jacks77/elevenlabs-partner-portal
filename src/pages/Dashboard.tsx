@@ -107,6 +107,7 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Link to="/documents">
             <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
               <CardHeader className="text-center">
                 <FileText className="h-8 w-8 mx-auto text-primary" />
@@ -114,7 +115,9 @@ export default function Dashboard() {
                 <CardDescription>Access shared documents and resources</CardDescription>
               </CardHeader>
             </Card>
+          </Link>
 
+          <Link to="/links">
             <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
               <CardHeader className="text-center">
                 <LinkIcon className="h-8 w-8 mx-auto text-primary" />
@@ -122,6 +125,7 @@ export default function Dashboard() {
                 <CardDescription>Important links and references</CardDescription>
               </CardHeader>
             </Card>
+          </Link>
 
             {isAdmin && (
               <Link to="/admin">
@@ -136,13 +140,15 @@ export default function Dashboard() {
             )}
 
             {isSuperAdmin && (
-              <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-                <CardHeader className="text-center">
-                  <BarChart3 className="h-8 w-8 mx-auto text-primary" />
-                  <CardTitle className="text-lg">Analytics</CardTitle>
-                  <CardDescription>View usage analytics</CardDescription>
-                </CardHeader>
-              </Card>
+              <Link to="/analytics">
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
+                  <CardHeader className="text-center">
+                    <BarChart3 className="h-8 w-8 mx-auto text-primary" />
+                    <CardTitle className="text-lg">Analytics</CardTitle>
+                    <CardDescription>View usage analytics</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
             )}
 
             {isSuperAdmin && (

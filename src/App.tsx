@@ -12,6 +12,9 @@ import CompleteAccount from "./pages/CompleteAccount";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import Documents from "./pages/Documents";
+import Links from "./pages/Links";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +44,21 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute requireSuperAdmin={true}>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/documents" element={
+              <ProtectedRoute>
+                <Documents />
+              </ProtectedRoute>
+            } />
+            <Route path="/links" element={
+              <ProtectedRoute>
+                <Links />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <Analytics />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
