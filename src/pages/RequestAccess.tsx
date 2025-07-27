@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,8 @@ interface Company {
 export default function RequestAccess() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [requestedCompanyName, setRequestedCompanyName] = useState('');
   const [requestedCompanyId, setRequestedCompanyId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -44,11 +47,31 @@ export default function RequestAccess() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Password mismatch",
+        description: "Passwords do not match. Please try again."
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Password too short",
+        description: "Password must be at least 6 characters long."
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const registrationData = {
         email,
+        password,
         full_name: fullName,
         requested_company_name: useExistingCompany ? null : requestedCompanyName,
         requested_company_id: useExistingCompany ? requestedCompanyId : null,
@@ -68,12 +91,14 @@ export default function RequestAccess() {
       } else {
         toast({
           title: "Request submitted successfully!",
-          description: "Your access request has been submitted for review. You'll receive an email when it's processed."
+          description: "Your access request has been submitted for review. You'll be able to sign in once it's approved."
         });
         
         // Reset form
         setFullName('');
         setEmail('');
+        setPassword('');
+        setConfirmPassword('');
         setRequestedCompanyName('');
         setRequestedCompanyId(null);
         setNotes('');
@@ -124,6 +149,32 @@ export default function RequestAccess() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a password (min 6 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
               />
             </div>
 

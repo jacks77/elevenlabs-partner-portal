@@ -1,3 +1,4 @@
+
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { ReactNode } from 'react';
@@ -35,10 +36,10 @@ export function ProtectedRoute({
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-2xl font-bold">Pending Approval</h2>
+            <h2 className="text-2xl font-bold">Access Pending</h2>
             <p className="text-muted-foreground">
               Your account is awaiting approval from an administrator. 
-              You'll receive an email notification once your access is approved.
+              Please check back later or contact support if you believe this is an error.
             </p>
             <button 
               onClick={() => window.location.reload()}
