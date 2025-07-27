@@ -46,13 +46,20 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Starting super admin bootstrap process...');
 
     // Check if admin user already exists
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(adminEmail);
+    const { data: existingUsers, error: getUserError } = await supabase.auth.admin.listUsers();
+    
+    if (getUserError) {
+      console.error('Error checking existing users:', getUserError);
+      throw getUserError;
+    }
+    
+    const existingUser = existingUsers.users.find(user => user.email === adminEmail);
     
     let userId: string;
     let message = '';
     
-    if (existingUser.user) {
-      userId = existingUser.user.id;
+    if (existingUser) {
+      userId = existingUser.id;
       message = `Super admin already exists with email: ${adminEmail}`;
       console.log(message);
     } else {
