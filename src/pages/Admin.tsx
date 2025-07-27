@@ -127,6 +127,11 @@ export default function Admin() {
 
   const approveRegistration = async (registrationId: string, companyId: string, role: string) => {
     try {
+      console.log('=== APPROVAL PROCESS STARTED ===');
+      console.log('Registration ID:', registrationId);
+      console.log('Company ID:', companyId);
+      console.log('Role:', role);
+      
       const { error } = await supabase
         .from('registrations')
         .update({
@@ -137,23 +142,35 @@ export default function Admin() {
         })
         .eq('id', registrationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating registration:', error);
+        throw error;
+      }
+      
+      console.log('Registration updated successfully');
 
       // Complete registration and create user account
-      console.log('Calling complete-registration function with registrationId:', registrationId);
-      const { error: completeError } = await supabase.functions.invoke('complete-registration', {
+      console.log('=== CALLING COMPLETE-REGISTRATION FUNCTION ===');
+      console.log('Function name: complete-registration');
+      console.log('Payload:', { registrationId });
+      
+      const { data: functionData, error: completeError } = await supabase.functions.invoke('complete-registration', {
         body: { registrationId }
       });
-      console.log('Complete registration response:', { completeError });
+      
+      console.log('=== FUNCTION RESPONSE ===');
+      console.log('Function data:', functionData);
+      console.log('Function error:', completeError);
 
       if (completeError) {
         console.error('Error completing registration:', completeError);
         toast({
           variant: "destructive",
           title: "Approval successful, but account creation failed",
-          description: "The registration was approved but the user account couldn't be created."
+          description: `Error: ${completeError.message}`
         });
       } else {
+        console.log('Registration completed successfully');
         toast({
           title: "Registration approved",
           description: "User account has been created and they can now sign in."
@@ -162,6 +179,7 @@ export default function Admin() {
 
       await fetchData();
     } catch (error: any) {
+      console.error('Error in approval process:', error);
       toast({
         variant: "destructive",
         title: "Failed to approve registration",
