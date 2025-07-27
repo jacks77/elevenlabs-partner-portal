@@ -16,27 +16,15 @@ interface Company {
   name: string;
 }
 
-interface CompanyMember {
-  user_id: string;
-  company_id: string;
-  is_admin: boolean;
-  is_approved: boolean;
-  company: {
-    name: string;
-  };
-  user_email?: string;
-}
 
 export default function Admin() {
-  const { profile, memberships } = useAuth();
+  const { profile } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [members, setMembers] = useState<CompanyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
 
   const isSuperAdmin = profile?.is_super_admin;
-  const userCompanies = memberships.filter(m => m.is_admin && m.is_approved).map(m => m.company_id);
 
   useEffect(() => {
     fetchData();
@@ -50,17 +38,7 @@ export default function Admin() {
         .select('*')
         .order('name');
 
-      // Fetch company members for companies the user can admin
-      const { data: membersData } = await supabase
-        .from('company_members')
-        .select(`
-          *,
-          company:companies(name)
-        `)
-        .order('created_at', { ascending: false });
-
       setCompanies(companiesData || []);
-      setMembers(membersData || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast({
@@ -171,34 +149,24 @@ export default function Admin() {
             )}
           </div>
 
-          {/* Company Members */}
+          {/* Companies List */}
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Company Members
+                <Building className="h-5 w-5 mr-2" />
+                Companies
               </CardTitle>
               <CardDescription>
-                Manage members across all companies
+                Manage company settings and information
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {members.map((member) => (
-                  <div key={`${member.user_id}-${member.company_id}`} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                {companies.map((company) => (
+                  <div key={company.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                     <div>
-                      <p className="font-medium">{member.company.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.is_admin ? 'Administrator' : 'Member'}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {member.is_admin && (
-                        <Badge variant="secondary">Admin</Badge>
-                      )}
-                      <Badge variant={member.is_approved ? 'default' : 'outline'}>
-                        {member.is_approved ? 'Approved' : 'Pending'}
-                      </Badge>
+                      <p className="font-medium">{company.name}</p>
+                      <p className="text-sm text-muted-foreground">Company ID: {company.id}</p>
                     </div>
                   </div>
                 ))}
