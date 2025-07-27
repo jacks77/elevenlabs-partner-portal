@@ -149,10 +149,11 @@ export default function Admin() {
       
       console.log('Registration updated successfully');
 
-      // Complete registration and create user account
+      // Complete registration and create user account  
       console.log('=== CALLING COMPLETE-REGISTRATION FUNCTION ===');
       console.log('Function name: complete-registration');
       console.log('Payload:', { registrationId });
+      console.log('Current timestamp:', new Date().toISOString());
       
       const { data: functionData, error: completeError } = await supabase.functions.invoke('complete-registration', {
         body: { registrationId, timestamp: Date.now() }
