@@ -71,54 +71,27 @@ export default function CreateUser() {
     try {
       console.log('Creating user with:', formData);
 
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        user_metadata: {
-          full_name: formData.fullName
-        },
-        email_confirm: true // Auto-confirm email
+      // Call the edge function to create the user
+      const { data, error } = await supabase.functions.invoke('create-user-admin', {
+        body: {
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+          companyId: formData.companyId,
+          isAdmin: formData.isAdmin
+        }
       });
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to create user');
       }
 
-      if (!authData.user) {
-        throw new Error('User creation failed - no user returned');
+      if (!data.success) {
+        throw new Error(data.error || 'User creation failed');
       }
 
-      console.log('User created in auth:', authData.user.id);
-
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: authData.user.id,
-          is_super_admin: false
-        });
-
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        throw profileError;
-      }
-
-      // Add user to company
-      const { error: memberError } = await supabase
-        .from('company_members')
-        .insert({
-          user_id: authData.user.id,
-          company_id: formData.companyId,
-          is_admin: formData.isAdmin,
-          is_approved: true
-        });
-
-      if (memberError) {
-        console.error('Member error:', memberError);
-        throw memberError;
-      }
+      console.log('User created successfully:', data.user);
 
       toast({
         title: "User created successfully",
