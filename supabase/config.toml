@@ -6,5 +6,8 @@ verify_jwt = false
 [functions.send-invite-email]
 verify_jwt = true
 
+[functions.complete-registration]
+verify_jwt = true
+
 [functions.complete-account]
 verify_jwt = false
