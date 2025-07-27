@@ -22,7 +22,14 @@ const Index = () => {
   // Show landing page for non-authenticated users
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
-      <div className="text-center space-y-6 p-8">
+      <div className="text-center space-y-8 p-8">
+        <div className="flex justify-center mb-8">
+          <img 
+            src="/lovable-uploads/1b3b5fc2-0efe-4db7-8f9b-e724e26f7c81.png" 
+            alt="ElevenLabs Logo" 
+            className="h-16 w-auto"
+          />
+        </div>
         <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
           Partner Portal
         </h1>

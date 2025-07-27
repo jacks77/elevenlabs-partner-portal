@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Layout } from "./components/Layout";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import RequestAccess from "./pages/RequestAccess";
@@ -34,37 +35,51 @@ const App = () => (
             <Route path="/complete-account" element={<CompleteAccount />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
               <ProtectedRoute requireSuperAdmin={true}>
-                <Admin />
+                <Layout>
+                  <Admin />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/create-user" element={
               <ProtectedRoute requireSuperAdmin={true}>
-                <CreateUser />
+                <Layout>
+                  <CreateUser />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute requireSuperAdmin={true}>
-                <Settings />
+                <Layout>
+                  <Settings />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/documents" element={
               <ProtectedRoute>
-                <Documents />
+                <Layout>
+                  <Documents />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/links" element={
               <ProtectedRoute>
-                <Links />
+                <Layout>
+                  <Links />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="/analytics" element={
               <ProtectedRoute requireSuperAdmin={true}>
-                <Analytics />
+                <Layout>
+                  <Analytics />
+                </Layout>
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
