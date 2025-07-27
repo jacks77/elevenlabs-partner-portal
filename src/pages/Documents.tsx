@@ -24,6 +24,7 @@ export default function Documents() {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,8 +76,23 @@ export default function Documents() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchCompanies();
   }, []);
 
   // Filter documents based on search term and selected tags
@@ -186,8 +202,8 @@ export default function Documents() {
 
   const getCompanyName = (companyId: string | null) => {
     if (!companyId) return 'Global';
-    const company = memberships?.find(m => m.company_id === companyId);
-    return company?.company?.name || 'Unknown Company';
+    const company = companies.find(c => c.id === companyId);
+    return company?.name || 'Unknown Company';
   };
 
   if (loading) {
@@ -257,9 +273,9 @@ export default function Documents() {
                   }))}
                 >
                   <option value="">Global (All Users)</option>
-                  {memberships?.map(membership => (
-                    <option key={membership.company_id} value={membership.company_id}>
-                      {membership.company?.name}
+                  {companies.map(company => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
                     </option>
                   ))}
                 </select>
