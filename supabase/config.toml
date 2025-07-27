@@ -1,1 +1,10 @@
 project_id = "bhiqswfvxswyrbmhixoa"
+
+[functions.bootstrap-super-admin]
+verify_jwt = false
+
+[functions.send-invite-email]
+verify_jwt = true
+
+[functions.complete-account]
+verify_jwt = false

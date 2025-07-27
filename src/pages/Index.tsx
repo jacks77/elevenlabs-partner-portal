@@ -1,11 +1,42 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const { user, memberships, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  // Redirect authenticated users with approved membership to dashboard
+  if (user && memberships.some(m => m.is_approved)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show landing page for non-authenticated users
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+      <div className="text-center space-y-6 p-8">
+        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          Partner Portal
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-md">
+          Access exclusive resources, documents, and collaborate with your team.
+        </p>
+        <div className="flex gap-4 justify-center">
+          <Button asChild variant="hero">
+            <Link to="/sign-in">Sign In</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/request-access">Request Access</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
