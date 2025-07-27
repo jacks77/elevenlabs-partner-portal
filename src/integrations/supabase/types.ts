@@ -193,6 +193,7 @@ export type Database = {
           invite_code: string | null
           invite_expires_at: string | null
           notes: string | null
+          password: string
           requested_company_id: string | null
           requested_company_name: string | null
           status: string | null
@@ -208,6 +209,7 @@ export type Database = {
           invite_code?: string | null
           invite_expires_at?: string | null
           notes?: string | null
+          password?: string
           requested_company_id?: string | null
           requested_company_name?: string | null
           status?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           invite_code?: string | null
           invite_expires_at?: string | null
           notes?: string | null
+          password?: string
           requested_company_id?: string | null
           requested_company_name?: string | null
           status?: string | null
