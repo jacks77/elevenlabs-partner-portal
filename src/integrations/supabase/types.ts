@@ -121,6 +121,7 @@ export type Database = {
           drive_file_id: string | null
           drive_url: string | null
           id: string
+          tags: string[] | null
           title: string | null
         }
         Insert: {
@@ -129,6 +130,7 @@ export type Database = {
           drive_file_id?: string | null
           drive_url?: string | null
           id?: string
+          tags?: string[] | null
           title?: string | null
         }
         Update: {
@@ -137,6 +139,7 @@ export type Database = {
           drive_file_id?: string | null
           drive_url?: string | null
           id?: string
+          tags?: string[] | null
           title?: string | null
         }
         Relationships: [

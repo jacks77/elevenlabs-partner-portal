@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, ExternalLink, Trash2 } from "lucide-react";
+import { FileText, Plus, ExternalLink, Trash2, Search, X, Tag } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,19 +16,26 @@ interface Document {
   drive_url: string;
   company_id: string | null;
   created_at: string;
+  tags: string[];
 }
 
 export default function Documents() {
   const { user, memberships, profile } = useAuth();
   const { toast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [newDocument, setNewDocument] = useState({
     title: '',
     drive_url: '',
-    company_id: null as string | null
+    company_id: null as string | null,
+    tags: [] as string[]
   });
+  const [currentTag, setCurrentTag] = useState('');
 
   // Check if user is super admin or company admin
   const isSuperAdmin = profile?.is_super_admin;
@@ -43,7 +50,19 @@ export default function Documents() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      
+      const documentsData = data || [];
+      setDocuments(documentsData);
+      
+      // Extract all unique tags
+      const allTags = new Set<string>();
+      documentsData.forEach(doc => {
+        if (doc.tags) {
+          doc.tags.forEach(tag => allTags.add(tag));
+        }
+      });
+      setAvailableTags(Array.from(allTags).sort());
+      
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
@@ -60,6 +79,27 @@ export default function Documents() {
     fetchDocuments();
   }, []);
 
+  // Filter documents based on search term and selected tags
+  useEffect(() => {
+    let filtered = documents;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(doc =>
+        doc.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(doc =>
+        selectedTags.every(tag => doc.tags?.includes(tag))
+      );
+    }
+
+    setFilteredDocuments(filtered);
+  }, [documents, searchTerm, selectedTags]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -75,7 +115,8 @@ export default function Documents() {
         description: "Document added successfully",
       });
 
-      setNewDocument({ title: '', drive_url: '', company_id: null });
+      setNewDocument({ title: '', drive_url: '', company_id: null, tags: [] });
+      setCurrentTag('');
       setIsDialogOpen(false);
       fetchDocuments();
     } catch (error) {
@@ -111,6 +152,36 @@ export default function Documents() {
         variant: "destructive",
       });
     }
+  };
+
+  const addTag = () => {
+    if (currentTag.trim() && !newDocument.tags.includes(currentTag.trim())) {
+      setNewDocument(prev => ({
+        ...prev,
+        tags: [...prev.tags, currentTag.trim()]
+      }));
+      setCurrentTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setNewDocument(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const toggleTagFilter = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedTags([]);
   };
 
   const getCompanyName = (companyId: string | null) => {
@@ -193,6 +264,41 @@ export default function Documents() {
                   ))}
                 </select>
               </div>
+              {canManageContent && (
+                <div>
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="space-y-2">
+                    <div className="flex space-x-2">
+                      <Input
+                        id="tags"
+                        value={currentTag}
+                        onChange={(e) => setCurrentTag(e.target.value)}
+                        placeholder="Add a tag"
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                      />
+                      <Button type="button" onClick={addTag} variant="outline" size="sm">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {newDocument.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {newDocument.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => removeTag(tag)}
+                              className="ml-1 text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
@@ -205,8 +311,49 @@ export default function Documents() {
         )}
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search documents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {(searchTerm || selectedTags.length > 0) && (
+            <Button onClick={clearFilters} variant="outline" size="sm">
+              <X className="w-4 h-4 mr-2" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {/* Available Tags Filter */}
+        {availableTags.length > 0 && (
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Filter by tags:</Label>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant={selectedTags.includes(tag) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/10 text-xs"
+                  onClick={() => toggleTagFilter(tag)}
+                >
+                  <Tag className="w-3 h-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {documents.map((document) => (
+        {filteredDocuments.map((document) => (
           <Card key={document.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -224,9 +371,21 @@ export default function Documents() {
               </div>
               <CardTitle className="text-lg">{document.title}</CardTitle>
               <CardDescription>
-                <Badge variant="secondary" className="text-xs">
-                  {getCompanyName(document.company_id)}
-                </Badge>
+                <div className="space-y-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {getCompanyName(document.company_id)}
+                  </Badge>
+                  {document.tags && document.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {document.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -243,6 +402,19 @@ export default function Documents() {
           </Card>
         ))}
       </div>
+
+      {filteredDocuments.length === 0 && documents.length > 0 && (
+        <div className="text-center py-12 col-span-full">
+          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No documents match your filters</h3>
+          <p className="text-muted-foreground mb-4">
+            Try adjusting your search terms or selected tags.
+          </p>
+          <Button onClick={clearFilters} variant="outline">
+            Clear Filters
+          </Button>
+        </div>
+      )}
 
       {documents.length === 0 && (
         <div className="text-center py-12">
