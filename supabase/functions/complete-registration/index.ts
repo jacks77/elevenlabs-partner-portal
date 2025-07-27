@@ -40,7 +40,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     });
 
-    console.log('Completing registration for:', registrationId);
+    console.log('=== COMPLETE REGISTRATION FUNCTION STARTED ===');
+    console.log('Registration ID:', registrationId);
 
     // Get registration details
     const { data: registration, error: fetchError } = await supabase
@@ -51,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (fetchError || !registration) {
-      console.error('Registration not found or not approved:', fetchError);
+      console.error('Registration fetch error:', fetchError);
       return new Response(
         JSON.stringify({ error: 'Registration not found or not approved' }),
         {
@@ -61,15 +62,26 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create user account
+    console.log('Registration found:', {
+      email: registration.email,
+      full_name: registration.full_name,
+      approved_company_id: registration.approved_company_id,
+      approved_role: registration.approved_role
+    });
+
+    // Create user account in auth.users
+    console.log('Creating user in auth.users...');
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: registration.email,
       password: registration.password,
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: {
+        full_name: registration.full_name
+      }
     });
 
     if (authError) {
-      console.error('Error creating user:', authError);
+      console.error('Auth user creation error:', authError);
       return new Response(
         JSON.stringify({ error: 'Failed to create user account: ' + authError.message }),
         {
@@ -80,8 +92,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userId = authData.user.id;
+    console.log('User created in auth.users with ID:', userId);
 
     // Create user profile
+    console.log('Creating user profile...');
     const { error: profileError } = await supabase
       .from('user_profiles')
       .insert({
@@ -90,12 +104,21 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (profileError) {
-      console.error('Error creating user profile:', profileError);
-      // Don't throw here, just log - user can still sign in
+      console.error('Profile creation error:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create user profile: ' + profileError.message }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
     }
+
+    console.log('User profile created successfully');
 
     // Add user to approved company
     if (registration.approved_company_id) {
+      console.log('Adding user to company...');
       const { error: membershipError } = await supabase
         .from('company_members')
         .insert({
@@ -106,12 +129,21 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
       if (membershipError) {
-        console.error('Error creating company membership:', membershipError);
-        // Don't throw here, just log - user can still sign in
+        console.error('Company membership error:', membershipError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create company membership: ' + membershipError.message }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          }
+        );
       }
+
+      console.log('User added to company successfully');
     }
 
     // Mark registration as accepted
+    console.log('Updating registration status...');
     const { error: updateError } = await supabase
       .from('registrations')
       .update({
@@ -120,18 +152,26 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', registration.id);
 
     if (updateError) {
-      console.error('Error updating registration status:', updateError);
-      // Don't throw here, just log - user account is created
+      console.error('Registration update error:', updateError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to update registration status: ' + updateError.message }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
     }
 
-    console.log('Registration completion successful for:', registration.email);
+    console.log('=== REGISTRATION COMPLETION SUCCESSFUL ===');
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Registration completed successfully',
         user: {
+          id: userId,
           email: registration.email,
+          full_name: registration.full_name,
           role: registration.approved_role,
           companyId: registration.approved_company_id
         }
@@ -143,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error('Error completing registration:', error);
+    console.error('=== COMPLETE REGISTRATION ERROR ===', error);
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to complete registration',
