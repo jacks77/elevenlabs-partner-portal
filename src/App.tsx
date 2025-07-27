@@ -11,6 +11,7 @@ import RequestAccess from "./pages/RequestAccess";
 import CompleteAccount from "./pages/CompleteAccount";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import CreateUser from "./pages/CreateUser";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
 import Links from "./pages/Links";
@@ -37,8 +38,13 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
-              <ProtectedRoute requireAdmin={true}>
+              <ProtectedRoute requireSuperAdmin={true}>
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-user" element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <CreateUser />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={

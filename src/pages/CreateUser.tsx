@@ -1,0 +1,266 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from '@/hooks/use-toast';
+import { ArrowLeft, UserPlus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+
+interface Company {
+  id: string;
+  name: string;
+}
+
+export default function CreateUser() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    companyId: '',
+    isAdmin: false
+  });
+
+  const isSuperAdmin = profile?.is_super_admin;
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      navigate('/dashboard');
+      return;
+    }
+    fetchCompanies();
+  }, [isSuperAdmin, navigate]);
+
+  const fetchCompanies = async () => {
+    try {
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name');
+
+      setCompanies(companiesData || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      toast({
+        variant: "destructive",
+        title: "Error loading companies",
+        description: "Please refresh the page to try again."
+      });
+    }
+  };
+
+  const createUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password || !formData.fullName || !formData.companyId) {
+      toast({
+        variant: "destructive",
+        title: "Missing fields",
+        description: "Please fill in all required fields."
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('Creating user with:', formData);
+
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: formData.email,
+        password: formData.password,
+        user_metadata: {
+          full_name: formData.fullName
+        },
+        email_confirm: true // Auto-confirm email
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('User creation failed - no user returned');
+      }
+
+      console.log('User created in auth:', authData.user.id);
+
+      // Create user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: authData.user.id,
+          is_super_admin: false
+        });
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw profileError;
+      }
+
+      // Add user to company
+      const { error: memberError } = await supabase
+        .from('company_members')
+        .insert({
+          user_id: authData.user.id,
+          company_id: formData.companyId,
+          is_admin: formData.isAdmin,
+          is_approved: true
+        });
+
+      if (memberError) {
+        console.error('Member error:', memberError);
+        throw memberError;
+      }
+
+      toast({
+        title: "User created successfully",
+        description: `${formData.fullName} can now sign in with email: ${formData.email}`
+      });
+
+      // Reset form
+      setFormData({
+        email: '',
+        password: '',
+        fullName: '',
+        companyId: '',
+        isAdmin: false
+      });
+
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to create user",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isSuperAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div>
+            <Button variant="ghost" asChild className="mb-4">
+              <Link to="/admin">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Admin
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Create New User</h1>
+            <p className="text-muted-foreground">
+              Create a new user account with default credentials
+            </p>
+          </div>
+
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <UserPlus className="h-5 w-5 mr-2" />
+                User Details
+              </CardTitle>
+              <CardDescription>
+                Fill in the user information. The user can change their password after first login.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={createUser} className="space-y-4">
+                <div>
+                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                    placeholder="Enter full name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter email address"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="password">Default Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter default password"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    User can change this password after logging in
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="company">Company *</Label>
+                  <Select value={formData.companyId} onValueChange={(value) => setFormData(prev => ({ ...prev, companyId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={formData.isAdmin ? "admin" : "member"} onValueChange={(value) => setFormData(prev => ({ ...prev, isAdmin: value === "admin" }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex space-x-2 pt-4">
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating...' : 'Create User'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => navigate('/admin')}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
