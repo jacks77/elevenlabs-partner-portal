@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send } from 'lucide-react';
+import OnboardingJourney from '@/components/OnboardingJourney';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
   useAnalytics(); // Track page view
+
+  const approvedMemberships = memberships.filter(m => m.is_approved);
+  const onboardingCompanies = approvedMemberships.filter(m => m.company?.is_in_onboarding);
 
   if (loading) {
     return (
@@ -25,7 +29,6 @@ export default function Dashboard() {
     return <Navigate to="/sign-in" replace />;
   }
 
-  const approvedMemberships = memberships.filter(m => m.is_approved);
   const isAdmin = approvedMemberships.some(m => m.is_admin) || profile?.is_super_admin;
   const isSuperAdmin = profile?.is_super_admin;
 
@@ -74,6 +77,11 @@ export default function Dashboard() {
               Access documentation, links, and resources for your ElevenLabs Partner Journey!
             </p>
           </div>
+
+          {/* Onboarding Journey - Show for companies in onboarding */}
+          {onboardingCompanies.map((membership) => (
+            <OnboardingJourney key={membership.company_id} companyId={membership.company_id} />
+          ))}
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

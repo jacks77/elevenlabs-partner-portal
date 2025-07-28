@@ -67,21 +67,39 @@ export type Database = {
       companies: {
         Row: {
           created_at: string
+          first_closed_won: boolean | null
+          first_lead_registered: boolean | null
           id: string
+          is_in_onboarding: boolean | null
+          kickoff_call_date: string | null
           name: string
           partner_salesforce_record: string | null
+          technical_enablement_date: string | null
+          track: string | null
         }
         Insert: {
           created_at?: string
+          first_closed_won?: boolean | null
+          first_lead_registered?: boolean | null
           id?: string
+          is_in_onboarding?: boolean | null
+          kickoff_call_date?: string | null
           name: string
           partner_salesforce_record?: string | null
+          technical_enablement_date?: string | null
+          track?: string | null
         }
         Update: {
           created_at?: string
+          first_closed_won?: boolean | null
+          first_lead_registered?: boolean | null
           id?: string
+          is_in_onboarding?: boolean | null
+          kickoff_call_date?: string | null
           name?: string
           partner_salesforce_record?: string | null
+          technical_enablement_date?: string | null
+          track?: string | null
         }
         Relationships: []
       }

@@ -18,6 +18,8 @@ interface CompanyMembership {
   company?: {
     id: string;
     name: string;
+    is_in_onboarding?: boolean;
+    track?: string;
   };
 }
 
@@ -93,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .from('company_members')
         .select(`
           *,
-          company:companies(id, name)
+          company:companies(id, name, is_in_onboarding, track)
         `)
         .eq('user_id', currentUser.id);
 

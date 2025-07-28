@@ -15,6 +15,7 @@ import Admin from "./pages/Admin";
 import CreateUser from "./pages/CreateUser";
 import InviteUser from "./pages/InviteUser";
 import AdminApprovals from "./pages/AdminApprovals";
+import OnboardingJourneys from "./pages/OnboardingJourneys";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
 import Links from "./pages/Links";
@@ -67,6 +68,13 @@ const App = () => (
               <ProtectedRoute requireAdmin>
                 <Layout>
                   <AdminApprovals />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/onboarding-journeys" element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <Layout>
+                  <OnboardingJourneys />
                 </Layout>
               </ProtectedRoute>
             } />

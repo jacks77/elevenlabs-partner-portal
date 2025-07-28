@@ -7,14 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink } from 'lucide-react';
+import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Company {
   id: string;
   name: string;
   partner_salesforce_record?: string;
+  is_in_onboarding?: boolean;
+  track?: string;
 }
 
 export default function Admin() {
@@ -23,6 +27,9 @@ export default function Admin() {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState('');
+  const [newCompanySalesforceUrl, setNewCompanySalesforceUrl] = useState('');
+  const [newCompanyTrack, setNewCompanyTrack] = useState('');
+  const [newCompanyInOnboarding, setNewCompanyInOnboarding] = useState(false);
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
   const [editingCompany, setEditingCompany] = useState<string | null>(null);
   const [editingSalesforceUrl, setEditingSalesforceUrl] = useState('');
@@ -82,7 +89,12 @@ export default function Admin() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .insert({ name: newCompanyName.trim() })
+        .insert({ 
+          name: newCompanyName.trim(),
+          partner_salesforce_record: newCompanySalesforceUrl.trim() || null,
+          track: newCompanyTrack || null,
+          is_in_onboarding: newCompanyInOnboarding
+        })
         .select()
         .single();
 
@@ -90,6 +102,9 @@ export default function Admin() {
 
       setCompanies(prev => [...prev, data]);
       setNewCompanyName('');
+      setNewCompanySalesforceUrl('');
+      setNewCompanyTrack('');
+      setNewCompanyInOnboarding(false);
       setShowNewCompanyDialog(false);
       
       toast({
@@ -177,6 +192,12 @@ export default function Admin() {
                     Create User
                   </Link>
                 </Button>
+                <Button asChild variant="outline">
+                  <Link to="/admin/onboarding-journeys">
+                    <Route className="h-4 w-4 mr-2" />
+                    Onboarding Journeys
+                  </Link>
+                </Button>
                 <Dialog open={showNewCompanyDialog} onOpenChange={setShowNewCompanyDialog}>
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -200,6 +221,37 @@ export default function Admin() {
                           onChange={(e) => setNewCompanyName(e.target.value)}
                           placeholder="Enter company name"
                         />
+                      </div>
+                      <div>
+                        <Label htmlFor="salesforceUrl">Salesforce URL</Label>
+                        <Input
+                          id="salesforceUrl"
+                          value={newCompanySalesforceUrl}
+                          onChange={(e) => setNewCompanySalesforceUrl(e.target.value)}
+                          placeholder="https://salesforce.com/..."
+                          type="url"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="track">Track</Label>
+                        <Select value={newCompanyTrack} onValueChange={setNewCompanyTrack}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select track" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Track 1">Track 1</SelectItem>
+                            <SelectItem value="Track 2">Track 2</SelectItem>
+                            <SelectItem value="Track 3">Track 3</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="inOnboarding"
+                          checked={newCompanyInOnboarding}
+                          onCheckedChange={(checked) => setNewCompanyInOnboarding(checked === true)}
+                        />
+                        <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
                       </div>
                       <div className="flex space-x-2">
                         <Button onClick={createCompany} disabled={!newCompanyName.trim()}>
