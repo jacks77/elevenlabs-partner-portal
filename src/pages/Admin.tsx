@@ -13,9 +13,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route, Search, Bell, BellOff, Newspaper, Trash2, Plus, Settings } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/UserManagement';
+import { EditCompanyForm } from '@/components/EditCompanyForm';
 
 interface Company {
   id: string;
@@ -58,13 +60,10 @@ export default function Admin() {
   const [newCompanyLeadUrl, setNewCompanyLeadUrl] = useState('');
   const [newCompanyInOnboarding, setNewCompanyInOnboarding] = useState(false);
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState({
-    salesforceUrl: '',
-    track: '',
-    leadSubmissionUrl: '',
-    inOnboarding: false
-  });
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
 
   // Notification management
   const [notifications, setNotifications] = useState<NotificationBanner[]>([]);
@@ -206,69 +205,89 @@ export default function Admin() {
     }
   };
 
-  const startEditingCompany = (company: Company) => {
-    setEditingCompany(company.id);
-    setEditingData({
-      salesforceUrl: company.partner_salesforce_record || '',
-      track: company.track || '',
-      leadSubmissionUrl: company.lead_submission_url || '',
-      inOnboarding: company.is_in_onboarding || false
-    });
+  const openEditDialog = (company: Company) => {
+    setEditingCompany(company);
+    setShowEditDialog(true);
   };
 
-  const cancelEditingCompany = () => {
+  const closeEditDialog = () => {
     setEditingCompany(null);
-    setEditingData({
-      salesforceUrl: '',
-      track: '',
-      leadSubmissionUrl: '',
-      inOnboarding: false
-    });
+    setShowEditDialog(false);
   };
 
-  const saveCompanyChanges = async (companyId: string) => {
+  const updateCompany = async (updatedData: Partial<Company>) => {
+    if (!editingCompany) return;
+
     try {
       const { error } = await supabase
         .from('companies')
         .update({
-          partner_salesforce_record: editingData.salesforceUrl.trim() || null,
-          track: editingData.track || null,
-          lead_submission_url: editingData.leadSubmissionUrl.trim() || null,
-          is_in_onboarding: editingData.inOnboarding
+          name: updatedData.name?.trim(),
+          partner_salesforce_record: updatedData.partner_salesforce_record?.trim() || null,
+          lead_submission_url: updatedData.lead_submission_url?.trim() || null,
+          track: updatedData.track || null,
+          is_in_onboarding: updatedData.is_in_onboarding || false
         })
-        .eq('id', companyId);
+        .eq('id', editingCompany.id);
 
       if (error) throw error;
 
       // Update local state
       setCompanies(prev => prev.map(company => 
-        company.id === companyId 
-            ? { 
-                ...company, 
-                partner_salesforce_record: editingData.salesforceUrl.trim() || undefined,
-                track: editingData.track || undefined,
-                lead_submission_url: editingData.leadSubmissionUrl.trim() || undefined,
-                is_in_onboarding: editingData.inOnboarding
-              }
+        company.id === editingCompany.id 
+          ? { ...company, ...updatedData }
           : company
       ));
 
-      setEditingCompany(null);
-      setEditingData({
-        salesforceUrl: '',
-        track: '',
-        leadSubmissionUrl: '',
-        inOnboarding: false
-      });
-
+      closeEditDialog();
+      
       toast({
         title: "Company updated",
-        description: "Company settings have been updated successfully."
+        description: "Company has been updated successfully."
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Failed to update company",
+        description: error.message
+      });
+    }
+  };
+
+  const openDeleteDialog = (company: Company) => {
+    setCompanyToDelete(company);
+    setShowDeleteDialog(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setCompanyToDelete(null);
+    setShowDeleteDialog(false);
+  };
+
+  const deleteCompany = async () => {
+    if (!companyToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', companyToDelete.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setCompanies(prev => prev.filter(company => company.id !== companyToDelete.id));
+
+      closeDeleteDialog();
+      
+      toast({
+        title: "Company deleted",
+        description: "Company has been deleted successfully."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete company",
         description: error.message
       });
     }
@@ -671,95 +690,22 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEditingCompany(company)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80 p-4" side="left" align="start">
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <h4 className="font-medium">Edit {company.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Update company settings and information.
-                                </p>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <div>
-                                  <Label className="text-xs">Salesforce URL</Label>
-                                  <Input
-                                    value={editingData.salesforceUrl}
-                                    onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
-                                    placeholder="https://salesforce.com/..."
-                                    className="text-sm mt-1"
-                                    type="url"
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">Track</Label>
-                                  <Select 
-                                    value={editingData.track} 
-                                    onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
-                                  >
-                                    <SelectTrigger className="text-sm mt-1">
-                                      <SelectValue placeholder="Select track" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="">No Track</SelectItem>
-                                      <SelectItem value="Track 1">Track 1</SelectItem>
-                                      <SelectItem value="Track 2">Track 2</SelectItem>
-                                      <SelectItem value="Track 3">Track 3</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label className="text-xs">Lead Submission URL</Label>
-                                  <Input
-                                    value={editingData.leadSubmissionUrl}
-                                    onChange={(e) => setEditingData(prev => ({ ...prev, leadSubmissionUrl: e.target.value }))}
-                                    placeholder="https://feathery.io/form/..."
-                                    className="text-sm mt-1"
-                                    type="url"
-                                  />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`onboarding-${company.id}`}
-                                    checked={editingData.inOnboarding}
-                                    onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
-                                  />
-                                  <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
-                                </div>
-                              </div>
-                              
-                              <div className="flex space-x-2 pt-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => saveCompanyChanges(company.id)}
-                                  className="flex-1"
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Save
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={cancelEditingCompany}
-                                  className="flex-1"
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(company)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openDeleteDialog(company)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
 
@@ -1019,6 +965,43 @@ export default function Admin() {
           </Tabs>
         </div>
       </div>
+
+      {/* Edit Company Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Company</DialogTitle>
+            <DialogDescription>
+              Update company information and settings.
+            </DialogDescription>
+          </DialogHeader>
+          {editingCompany && (
+            <EditCompanyForm 
+              company={editingCompany} 
+              onSave={updateCompany}
+              onCancel={closeEditDialog}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Company Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{companyToDelete?.name}"? This action cannot be undone and will remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteDialog}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteCompany} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Company
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
