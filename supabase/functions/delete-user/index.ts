@@ -31,7 +31,7 @@ serve(async (req) => {
       )
     }
 
-    // Check if user is super admin
+    // Check if user is super admin using the service role client
     const { data: profile } = await supabaseAdmin
       .from('user_profiles')
       .select('is_super_admin')
@@ -55,18 +55,36 @@ serve(async (req) => {
       )
     }
 
-    // First, call our database function to clean up related data
-    const { error: cleanupError } = await supabaseAdmin.rpc('delete_user_account', {
-      target_user_id: targetUserId
-    })
+    // First, manually clean up related data since we're using service role
+    // Delete from company_members
+    await supabaseAdmin
+      .from('company_members')
+      .delete()
+      .eq('user_id', targetUserId)
 
-    if (cleanupError) {
-      console.error('Error cleaning up user data:', cleanupError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to clean up user data: ' + cleanupError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Delete from user_profiles  
+    await supabaseAdmin
+      .from('user_profiles')
+      .delete()
+      .eq('user_id', targetUserId)
+    
+    // Delete from registrations (if any)
+    await supabaseAdmin
+      .from('registrations')
+      .delete()
+      .eq('approved_by', targetUserId)
+    
+    // Delete analytics data
+    await supabaseAdmin
+      .from('analytics_page_views')
+      .delete()
+      .eq('user_id', targetUserId)
+      
+    await supabaseAdmin
+      .from('analytics_link_clicks')
+      .delete()
+      .eq('user_id', targetUserId)
+
 
     // Then delete the user from auth
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)

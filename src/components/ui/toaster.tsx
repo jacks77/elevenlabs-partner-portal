@@ -15,19 +15,24 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props} className="shadow-elegant border-border/50 bg-card/95 backdrop-blur-sm">
-            <div className="grid gap-1">
-              {title && <ToastTitle className="text-card-foreground font-semibold">{title}</ToastTitle>}
-              {description && (
-                <ToastDescription className="text-muted-foreground">{description}</ToastDescription>
-              )}
+          <Toast key={id} {...props} className="shadow-elegant border-primary/20 bg-card/98 backdrop-blur-md min-w-[350px]">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+              </div>
+              <div className="grid gap-1 flex-1">
+                {title && <ToastTitle className="text-card-foreground font-semibold text-center">{title}</ToastTitle>}
+                {description && (
+                  <ToastDescription className="text-muted-foreground text-center">{description}</ToastDescription>
+                )}
+              </div>
             </div>
             {action}
             <ToastClose className="hover:bg-accent/50 transition-colors" />
           </Toast>
         )
       })}
-      <ToastViewport className="fixed top-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]" />
+      <ToastViewport className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex max-h-screen w-full flex-col p-4 md:max-w-[420px]" />
     </ToastProvider>
   )
 }

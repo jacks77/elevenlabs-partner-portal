@@ -681,7 +681,7 @@ export default function Admin() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80 bg-popover border border-border shadow-lg z-50">
+                          <PopoverContent className="w-80 p-4" side="left" align="start">
                             <div className="space-y-4">
                               <div className="space-y-2">
                                 <h4 className="font-medium">Edit {company.name}</h4>
@@ -710,7 +710,7 @@ export default function Admin() {
                                     <SelectTrigger className="text-sm mt-1">
                                       <SelectValue placeholder="Select track" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-popover border border-border z-50">
+                                    <SelectContent>
                                       <SelectItem value="">No Track</SelectItem>
                                       <SelectItem value="Track 1">Track 1</SelectItem>
                                       <SelectItem value="Track 2">Track 2</SelectItem>
