@@ -21,8 +21,8 @@ export default function InviteUser() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Only show companies where user is admin and approved
-  const adminCompanies = memberships.filter(m => m.is_admin && m.is_approved);
+  // Show companies where user is a member and approved
+  const memberCompanies = memberships.filter(m => m.is_approved);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +80,7 @@ export default function InviteUser() {
     }
   };
 
-  if (adminCompanies.length === 0) {
+  if (memberCompanies.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-subtle">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -93,7 +93,7 @@ export default function InviteUser() {
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground">
-                You need to be an admin of a company to invite users.
+                You need to be a member of a company to invite users.
               </p>
             </CardContent>
           </Card>
@@ -154,7 +154,7 @@ export default function InviteUser() {
                     <SelectValue placeholder="Select a company" />
                   </SelectTrigger>
                   <SelectContent>
-                    {adminCompanies.map((membership) => (
+                    {memberCompanies.map((membership) => (
                       <SelectItem key={membership.company_id} value={membership.company_id}>
                         {membership.company?.name || 'Unknown Company'}
                       </SelectItem>

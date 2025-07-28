@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, X, Clock } from 'lucide-react';
+import { ArrowLeft, Check, X, Clock, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { generateSecurePassword } from '@/lib/passwordGenerator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PendingRegistration {
   id: string;
@@ -27,6 +31,9 @@ export default function AdminApprovals() {
   const [pendingRegistrations, setPendingRegistrations] = useState<PendingRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState<PendingRegistration | null>(null);
+  const [password, setPassword] = useState('');
 
   const isSuperAdmin = profile?.is_super_admin;
   const adminCompanies = memberships.filter(m => m.is_admin && m.is_approved).map(m => m.company_id);
@@ -66,8 +73,37 @@ export default function AdminApprovals() {
   };
 
   const handleApproval = async (registrationId: string, approve: boolean) => {
+    if (approve && !password) {
+      toast({
+        variant: "destructive",
+        title: "Password required",
+        description: "Please generate a password for the new user."
+      });
+      return;
+    }
+
     setActionLoading(registrationId);
     try {
+      if (approve) {
+        // Call edge function to create user account
+        const registration = pendingRegistrations.find(r => r.id === registrationId);
+        if (!registration) throw new Error('Registration not found');
+
+        const { data, error: createError } = await supabase.functions.invoke('create-user-admin', {
+          body: {
+            email: registration.email,
+            password: password,
+            fullName: registration.full_name,
+            companyId: registration.approved_company_id,
+            isAdmin: false
+          }
+        });
+
+        if (createError) throw createError;
+        if (!data.success) throw new Error(data.error || 'User creation failed');
+      }
+
+      // Update registration status
       const { error } = await supabase
         .from('registrations')
         .update({
@@ -82,8 +118,15 @@ export default function AdminApprovals() {
 
       toast({
         title: approve ? "Registration approved" : "Registration rejected",
-        description: `The user registration has been ${approve ? 'approved' : 'rejected'}.`
+        description: approve 
+          ? `User account created successfully with temporary password.`
+          : `The user registration has been rejected.`
       });
+
+      // Reset dialog state
+      setShowApprovalDialog(false);
+      setSelectedRegistration(null);
+      setPassword('');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -93,6 +136,21 @@ export default function AdminApprovals() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleApproveClick = (registration: PendingRegistration) => {
+    setSelectedRegistration(registration);
+    setPassword(generateSecurePassword());
+    setShowApprovalDialog(true);
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateSecurePassword();
+    setPassword(newPassword);
+    toast({
+      title: "Password generated",
+      description: "A secure password has been generated."
+    });
   };
 
   if (loading) {
@@ -153,7 +211,7 @@ export default function AdminApprovals() {
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            onClick={() => handleApproval(registration.id, true)}
+                            onClick={() => handleApproveClick(registration)}
                             disabled={actionLoading === registration.id}
                           >
                             <Check className="h-4 w-4 mr-1" />
@@ -177,6 +235,55 @@ export default function AdminApprovals() {
             )}
           </CardContent>
         </Card>
+
+        {/* Approval Dialog */}
+        <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Approve Registration</DialogTitle>
+              <DialogDescription>
+                Generate a temporary password for {selectedRegistration?.full_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="tempPassword">Temporary Password *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="tempPassword"
+                    type="text"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter temporary password"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeneratePassword}
+                    className="shrink-0"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  User can change this password after first login
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => selectedRegistration && handleApproval(selectedRegistration.id, true)}
+                  disabled={!password || actionLoading === selectedRegistration?.id}
+                >
+                  {actionLoading === selectedRegistration?.id ? "Creating..." : "Approve & Create Account"}
+                </Button>
+                <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

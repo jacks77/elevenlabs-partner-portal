@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft, UserPlus, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { generateSecurePassword } from '@/lib/passwordGenerator';
 
 interface Company {
   id: string;
@@ -119,6 +120,15 @@ export default function CreateUser() {
     }
   };
 
+  const handleGeneratePassword = () => {
+    const newPassword = generateSecurePassword();
+    setFormData(prev => ({ ...prev, password: newPassword }));
+    toast({
+      title: "Password generated",
+      description: "A secure password has been generated."
+    });
+  };
+
   if (!isSuperAdmin) {
     return null;
   }
@@ -179,14 +189,24 @@ export default function CreateUser() {
 
                 <div>
                   <Label htmlFor="password">Default Password *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter default password"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Enter default password"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGeneratePassword}
+                      className="shrink-0"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     User can change this password after logging in
                   </p>
