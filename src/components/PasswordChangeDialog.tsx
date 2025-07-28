@@ -60,9 +60,12 @@ export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: Password
         description: "Your password has been changed."
       });
 
-      onSuccess();
-      onOpenChange(false);
+      // Clear form and close dialog first
       setPasswords({ new: '', confirm: '' });
+      onOpenChange(false);
+      
+      // Then call success callback
+      onSuccess();
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -75,8 +78,12 @@ export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: Password
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !loading && onOpenChange(open)}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!loading) {
+        onOpenChange(newOpen);
+      }
+    }}>
+      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => loading && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Lock className="h-5 w-5 mr-2" />
