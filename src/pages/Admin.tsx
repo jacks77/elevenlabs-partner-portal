@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route, Search } from 'lucide-react';
+import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route, Search, Bell, BellOff, Newspaper, Trash2, Plus, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Company {
   id: string;
@@ -21,6 +23,23 @@ interface Company {
   track?: string;
 }
 
+interface NotificationBanner {
+  id: string;
+  message: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface NewsStory {
+  id: string;
+  headline: string;
+  subheading?: string;
+  content?: string;
+  image_url?: string;
+  is_published: boolean;
+  created_at: string;
+}
+
 export default function Admin() {
   const { profile, memberships } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -28,6 +47,8 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  
+  // Company management
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanySalesforceUrl, setNewCompanySalesforceUrl] = useState('');
   const [newCompanyTrack, setNewCompanyTrack] = useState('');
@@ -40,11 +61,29 @@ export default function Admin() {
     inOnboarding: false
   });
 
+  // Notification management
+  const [notifications, setNotifications] = useState<NotificationBanner[]>([]);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+
+  // News stories management
+  const [newsStories, setNewsStories] = useState<NewsStory[]>([]);
+  const [newStory, setNewStory] = useState({
+    headline: '',
+    subheading: '',
+    content: '',
+    image_url: ''
+  });
+  const [showNewsDialog, setShowNewsDialog] = useState(false);
+  const [editingStory, setEditingStory] = useState<string | null>(null);
+
   const isSuperAdmin = profile?.is_super_admin;
 
   useEffect(() => {
     fetchData();
     fetchPendingCount();
+    fetchNotifications();
+    fetchNewsStories();
   }, []);
 
   useEffect(() => {
@@ -94,6 +133,32 @@ export default function Admin() {
       setPendingCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending count:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await supabase
+        .from('notification_banners')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const fetchNewsStories = async () => {
+    try {
+      const { data } = await supabase
+        .from('news_stories')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      setNewsStories(data || []);
+    } catch (error) {
+      console.error('Error fetching news stories:', error);
     }
   };
 
@@ -197,6 +262,189 @@ export default function Admin() {
     }
   };
 
+  // Notification management functions
+  const createNotification = async () => {
+    if (!notificationMessage.trim()) return;
+
+    try {
+      // Deactivate any existing active notifications
+      await supabase
+        .from('notification_banners')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      const { data, error } = await supabase
+        .from('notification_banners')
+        .insert({ 
+          message: notificationMessage.trim(),
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setNotifications(prev => [data, ...prev.map(n => ({ ...n, is_active: false }))]);
+      setNotificationMessage('');
+      setShowNotificationDialog(false);
+      
+      toast({
+        title: "Notification created",
+        description: "New notification banner is now active."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to create notification",
+        description: error.message
+      });
+    }
+  };
+
+  const toggleNotification = async (id: string, isActive: boolean) => {
+    try {
+      if (isActive) {
+        // Deactivate other notifications first
+        await supabase
+          .from('notification_banners')
+          .update({ is_active: false })
+          .neq('id', id);
+      }
+
+      const { error } = await supabase
+        .from('notification_banners')
+        .update({ is_active: isActive })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.map(n => 
+        n.id === id ? { ...n, is_active: isActive } : { ...n, is_active: false }
+      ));
+
+      toast({
+        title: isActive ? "Notification activated" : "Notification deactivated",
+        description: isActive ? "Banner is now visible to users." : "Banner is no longer visible."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update notification",
+        description: error.message
+      });
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notification_banners')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      
+      toast({
+        title: "Notification deleted",
+        description: "Notification has been removed."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete notification",
+        description: error.message
+      });
+    }
+  };
+
+  // News stories management functions
+  const createNewsStory = async () => {
+    if (!newStory.headline.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('news_stories')
+        .insert({
+          headline: newStory.headline.trim(),
+          subheading: newStory.subheading.trim() || null,
+          content: newStory.content.trim() || null,
+          image_url: newStory.image_url.trim() || null,
+          is_published: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setNewsStories(prev => [data, ...prev]);
+      setNewStory({ headline: '', subheading: '', content: '', image_url: '' });
+      setShowNewsDialog(false);
+      
+      toast({
+        title: "News story created",
+        description: "Story has been published successfully."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to create story",
+        description: error.message
+      });
+    }
+  };
+
+  const toggleStoryPublication = async (id: string, isPublished: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('news_stories')
+        .update({ is_published: isPublished })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNewsStories(prev => prev.map(s => 
+        s.id === id ? { ...s, is_published: isPublished } : s
+      ));
+
+      toast({
+        title: isPublished ? "Story published" : "Story unpublished",
+        description: isPublished ? "Story is now visible to users." : "Story is no longer visible."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update story",
+        description: error.message
+      });
+    }
+  };
+
+  const deleteNewsStory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('news_stories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNewsStories(prev => prev.filter(s => s.id !== id));
+      
+      toast({
+        title: "Story deleted",
+        description: "News story has been removed."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete story",
+        description: error.message
+      });
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -216,83 +464,394 @@ export default function Admin() {
               </Button>
               <h1 className="text-3xl font-bold">Admin Panel</h1>
               <p className="text-muted-foreground">
-                Manage users, members, and company settings
+                Manage portal content, users, and company settings
               </p>
             </div>
-            {isSuperAdmin && (
-              <div className="flex space-x-2">
-                <Button asChild>
-                  <Link to="/create-user">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Create User
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/admin/onboarding-journeys">
-                    <Route className="h-4 w-4 mr-2" />
-                    Onboarding Journeys
-                  </Link>
-                </Button>
-                <Dialog open={showNewCompanyDialog} onOpenChange={setShowNewCompanyDialog}>
+          </div>
+
+          {/* Admin Tabs */}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="companies">Companies</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="news">News</TabsTrigger>
+            </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="companies"]') as HTMLElement)?.click()}>
+                  <CardHeader className="text-center pb-4">
+                    <Building className="h-8 w-8 mx-auto text-primary" />
+                    <CardTitle className="text-lg">Companies</CardTitle>
+                    <CardDescription>Manage partner companies</CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="users"]') as HTMLElement)?.click()}>
+                  <CardHeader className="text-center pb-4">
+                    <Users className="h-8 w-8 mx-auto text-primary" />
+                    <CardTitle className="text-lg">Users</CardTitle>
+                    <CardDescription>Create and manage users</CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="notifications"]') as HTMLElement)?.click()}>
+                  <CardHeader className="text-center pb-4">
+                    <Bell className="h-8 w-8 mx-auto text-primary" />
+                    <CardTitle className="text-lg">Notifications</CardTitle>
+                    <CardDescription>Global notification banners</CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="news"]') as HTMLElement)?.click()}>
+                  <CardHeader className="text-center pb-4">
+                    <Newspaper className="h-8 w-8 mx-auto text-primary" />
+                    <CardTitle className="text-lg">News</CardTitle>
+                    <CardDescription>Manage news updates</CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+
+              {/* Pending Approvals */}
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Clock className="h-5 w-5 mr-2" />
+                      Pending Approvals
+                    </div>
+                    {pendingCount > 0 && (
+                      <Badge variant="destructive">{pendingCount}</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    Review and approve user registration requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pendingCount === 0 ? (
+                    <p className="text-muted-foreground">No pending registrations</p>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <p className="text-muted-foreground">
+                        {pendingCount} registration{pendingCount !== 1 ? 's' : ''} waiting for approval
+                      </p>
+                      <Button asChild>
+                        <Link to="/admin/approvals">
+                          Review Approvals
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Companies Tab */}
+            <TabsContent value="companies" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">Companies</h2>
+                  <p className="text-muted-foreground">Manage partner companies and their settings</p>
+                </div>
+                {isSuperAdmin && (
+                  <Dialog open={showNewCompanyDialog} onOpenChange={setShowNewCompanyDialog}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Company
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Company</DialogTitle>
+                        <DialogDescription>
+                          Add a new company to the partner portal.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="companyName">Company Name</Label>
+                          <Input
+                            id="companyName"
+                            value={newCompanyName}
+                            onChange={(e) => setNewCompanyName(e.target.value)}
+                            placeholder="Enter company name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="salesforceUrl">Salesforce URL</Label>
+                          <Input
+                            id="salesforceUrl"
+                            value={newCompanySalesforceUrl}
+                            onChange={(e) => setNewCompanySalesforceUrl(e.target.value)}
+                            placeholder="https://salesforce.com/..."
+                            type="url"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="track">Track</Label>
+                          <Select value={newCompanyTrack} onValueChange={setNewCompanyTrack}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select track" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Track 1">Track 1</SelectItem>
+                              <SelectItem value="Track 2">Track 2</SelectItem>
+                              <SelectItem value="Track 3">Track 3</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="inOnboarding"
+                            checked={newCompanyInOnboarding}
+                            onCheckedChange={(checked) => setNewCompanyInOnboarding(checked === true)}
+                          />
+                          <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button onClick={createCompany} disabled={!newCompanyName.trim()}>
+                            Create Company
+                          </Button>
+                          <Button variant="outline" onClick={() => setShowNewCompanyDialog(false)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+
+              <Card className="shadow-card">
+                <CardHeader>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search companies..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {filteredCompanies.map((company) => (
+                      <div key={company.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3">
+                            <p className="font-medium truncate">{company.name}</p>
+                            <div className="flex items-center gap-2">
+                              {company.track && (
+                                <Badge variant="outline" className="text-xs">{company.track}</Badge>
+                              )}
+                              {company.is_in_onboarding && (
+                                <Badge variant="secondary" className="text-xs">Onboarding</Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {editingCompany !== company.id && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {company.partner_salesforce_record ? (
+                                <a
+                                  href={company.partner_salesforce_record}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary underline inline-flex items-center"
+                                >
+                                  Salesforce Record <ExternalLink className="h-3 w-3 ml-1" />
+                                </a>
+                              ) : (
+                                <span>No Salesforce record</span>
+                              )}
+                            </div>
+                          )}
+
+                          {editingCompany === company.id && (
+                            <div className="mt-3 space-y-3 p-3 bg-muted/50 rounded-md">
+                              <div>
+                                <Label className="text-xs">Salesforce URL</Label>
+                                <Input
+                                  value={editingData.salesforceUrl}
+                                  onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
+                                  placeholder="https://salesforce.com/..."
+                                  className="text-sm mt-1"
+                                  type="url"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Track</Label>
+                                <Select 
+                                  value={editingData.track} 
+                                  onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
+                                >
+                                  <SelectTrigger className="text-sm mt-1">
+                                    <SelectValue placeholder="Select track" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">No Track</SelectItem>
+                                    <SelectItem value="Track 1">Track 1</SelectItem>
+                                    <SelectItem value="Track 2">Track 2</SelectItem>
+                                    <SelectItem value="Track 3">Track 3</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`onboarding-${company.id}`}
+                                  checked={editingData.inOnboarding}
+                                  onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
+                                />
+                                <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveCompanyChanges(company.id)}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={cancelEditingCompany}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {editingCompany !== company.id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => startEditingCompany(company)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+
+                    {filteredCompanies.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No companies found</p>
+                        {searchTerm && (
+                          <p className="text-sm">Try adjusting your search terms</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Users Tab */}
+            <TabsContent value="users" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">User Management</h2>
+                  <p className="text-muted-foreground">Create and manage user accounts</p>
+                </div>
+                <div className="flex space-x-2">
+                  {isSuperAdmin && (
+                    <Button asChild>
+                      <Link to="/create-user">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create User
+                      </Link>
+                    </Button>
+                  )}
+                  <Button asChild variant="outline">
+                    <Link to="/admin/onboarding-journeys">
+                      <Route className="h-4 w-4 mr-2" />
+                      Onboarding Journeys
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Create New User</CardTitle>
+                    <CardDescription>Add a new user account to the system</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild className="w-full">
+                      <Link to="/create-user">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create User Account
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Onboarding Journeys</CardTitle>
+                    <CardDescription>Manage custom onboarding workflows</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link to="/admin/onboarding-journeys">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Configure Journeys
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Notifications Tab */}
+            <TabsContent value="notifications" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">Notification Banners</h2>
+                  <p className="text-muted-foreground">Manage global notification banners displayed to all users</p>
+                </div>
+                <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Building className="h-4 w-4 mr-2" />
-                      New Company
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Notification
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Create New Company</DialogTitle>
+                      <DialogTitle>Create Notification Banner</DialogTitle>
                       <DialogDescription>
-                        Add a new company to the partner portal.
+                        Create a new notification banner that will be displayed to all users.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="companyName">Company Name</Label>
-                        <Input
-                          id="companyName"
-                          value={newCompanyName}
-                          onChange={(e) => setNewCompanyName(e.target.value)}
-                          placeholder="Enter company name"
+                        <Label htmlFor="notificationMessage">Message</Label>
+                        <Textarea
+                          id="notificationMessage"
+                          value={notificationMessage}
+                          onChange={(e) => setNotificationMessage(e.target.value)}
+                          placeholder="Enter notification message..."
+                          rows={3}
                         />
-                      </div>
-                      <div>
-                        <Label htmlFor="salesforceUrl">Salesforce URL</Label>
-                        <Input
-                          id="salesforceUrl"
-                          value={newCompanySalesforceUrl}
-                          onChange={(e) => setNewCompanySalesforceUrl(e.target.value)}
-                          placeholder="https://salesforce.com/..."
-                          type="url"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="track">Track</Label>
-                        <Select value={newCompanyTrack} onValueChange={setNewCompanyTrack}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select track" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Track 1">Track 1</SelectItem>
-                            <SelectItem value="Track 2">Track 2</SelectItem>
-                            <SelectItem value="Track 3">Track 3</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="inOnboarding"
-                          checked={newCompanyInOnboarding}
-                          onCheckedChange={(checked) => setNewCompanyInOnboarding(checked === true)}
-                        />
-                        <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
                       </div>
                       <div className="flex space-x-2">
-                        <Button onClick={createCompany} disabled={!newCompanyName.trim()}>
-                          Create Company
+                        <Button onClick={createNotification} disabled={!notificationMessage.trim()}>
+                          Create & Activate
                         </Button>
-                        <Button variant="outline" onClick={() => setShowNewCompanyDialog(false)}>
+                        <Button variant="outline" onClick={() => setShowNotificationDialog(false)}>
                           Cancel
                         </Button>
                       </div>
@@ -300,177 +859,198 @@ export default function Admin() {
                   </DialogContent>
                 </Dialog>
               </div>
-            )}
-          </div>
 
-          {/* Pending Approvals Card */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2" />
-                  Pending Approvals
-                </div>
-                {pendingCount > 0 && (
-                  <Badge variant="destructive">{pendingCount}</Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Review and approve user registration requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pendingCount === 0 ? (
-                <p className="text-muted-foreground">No pending registrations</p>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-muted-foreground">
-                    {pendingCount} registration{pendingCount !== 1 ? 's' : ''} waiting for approval
-                  </p>
-                  <Button asChild>
-                    <Link to="/admin/approvals">
-                      Review Approvals
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Companies List */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Building className="h-5 w-5 mr-2" />
-                Companies ({filteredCompanies.length})
-              </CardTitle>
-              <CardDescription>
-                Manage company settings and information
-              </CardDescription>
-              <div className="relative mt-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search companies..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {filteredCompanies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        <p className="font-medium truncate">{company.name}</p>
-                        <div className="flex items-center gap-2">
-                          {company.track && (
-                            <Badge variant="outline" className="text-xs">{company.track}</Badge>
-                          )}
-                          {company.is_in_onboarding && (
-                            <Badge variant="secondary" className="text-xs">Onboarding</Badge>
-                          )}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active & Recent Notifications</CardTitle>
+                  <CardDescription>Only one notification can be active at a time</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {notifications.map((notification) => (
+                      <div key={notification.id} className="flex items-start justify-between p-3 border border-border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {notification.is_active ? (
+                              <Badge variant="default">Active</Badge>
+                            ) : (
+                              <Badge variant="secondary">Inactive</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(notification.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-sm">{notification.message}</p>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          <Button
+                            size="sm"
+                            variant={notification.is_active ? "outline" : "default"}
+                            onClick={() => toggleNotification(notification.id, !notification.is_active)}
+                          >
+                            {notification.is_active ? (
+                              <BellOff className="h-4 w-4" />
+                            ) : (
+                              <Bell className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteNotification(notification.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      
-                      {/* Compact company details */}
-                      {(isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && editingCompany !== company.id && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {company.partner_salesforce_record ? (
-                            <a
-                              href={company.partner_salesforce_record}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-primary underline inline-flex items-center"
-                            >
-                              Salesforce Record <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
-                          ) : (
-                            <span>No Salesforce record</span>
-                          )}
-                        </div>
-                      )}
+                    ))}
 
-                      {/* Edit form */}
-                      {editingCompany === company.id && (
-                        <div className="mt-3 space-y-3 p-3 bg-muted/50 rounded-md">
-                          <div>
-                            <Label className="text-xs">Salesforce URL</Label>
-                            <Input
-                              value={editingData.salesforceUrl}
-                              onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
-                              placeholder="https://salesforce.com/..."
-                              className="text-sm mt-1"
-                              type="url"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Track</Label>
-                            <Select 
-                              value={editingData.track} 
-                              onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
-                            >
-                              <SelectTrigger className="text-sm mt-1">
-                                <SelectValue placeholder="Select track" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">No Track</SelectItem>
-                                <SelectItem value="Track 1">Track 1</SelectItem>
-                                <SelectItem value="Track 2">Track 2</SelectItem>
-                                <SelectItem value="Track 3">Track 3</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`onboarding-${company.id}`}
-                              checked={editingData.inOnboarding}
-                              onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
-                            />
-                            <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => saveCompanyChanges(company.id)}
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEditingCompany}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {editingCompany !== company.id && (isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditingCompany(company)}
-                        className="shrink-0 ml-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                    {notifications.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No notifications created yet</p>
+                        <p className="text-sm">Create your first notification banner to get started</p>
+                      </div>
                     )}
                   </div>
-                ))}
-                {filteredCompanies.length === 0 && searchTerm && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No companies found matching "{searchTerm}"
-                  </div>
-                )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* News Tab */}
+            <TabsContent value="news" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold">News Stories</h2>
+                  <p className="text-muted-foreground">Manage news updates shown in the Recent Updates section</p>
+                </div>
+                <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Story
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Create News Story</DialogTitle>
+                      <DialogDescription>
+                        Create a new news story for the Recent Updates section.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="headline">Headline</Label>
+                        <Input
+                          id="headline"
+                          value={newStory.headline}
+                          onChange={(e) => setNewStory(prev => ({ ...prev, headline: e.target.value }))}
+                          placeholder="Enter story headline..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="subheading">Subheading</Label>
+                        <Input
+                          id="subheading"
+                          value={newStory.subheading}
+                          onChange={(e) => setNewStory(prev => ({ ...prev, subheading: e.target.value }))}
+                          placeholder="Enter story subheading..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="imageUrl">Image URL</Label>
+                        <Input
+                          id="imageUrl"
+                          value={newStory.image_url}
+                          onChange={(e) => setNewStory(prev => ({ ...prev, image_url: e.target.value }))}
+                          placeholder="https://example.com/image.jpg"
+                          type="url"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="content">Full Content</Label>
+                        <Textarea
+                          id="content"
+                          value={newStory.content}
+                          onChange={(e) => setNewStory(prev => ({ ...prev, content: e.target.value }))}
+                          placeholder="Enter the full story content..."
+                          rows={6}
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button onClick={createNewsStory} disabled={!newStory.headline.trim()}>
+                          Create & Publish
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowNewsDialog(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
-            </CardContent>
-          </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Published & Draft Stories</CardTitle>
+                  <CardDescription>Manage your news stories and their publication status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {newsStories.map((story) => (
+                      <div key={story.id} className="flex items-start gap-4 p-4 border border-border rounded-lg">
+                        {story.image_url && (
+                          <img 
+                            src={story.image_url} 
+                            alt={story.headline}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {story.is_published ? (
+                              <Badge variant="default">Published</Badge>
+                            ) : (
+                              <Badge variant="secondary">Draft</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(story.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h3 className="font-semibold">{story.headline}</h3>
+                          {story.subheading && (
+                            <p className="text-sm text-muted-foreground mt-1">{story.subheading}</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant={story.is_published ? "outline" : "default"}
+                            onClick={() => toggleStoryPublication(story.id, !story.is_published)}
+                          >
+                            {story.is_published ? "Unpublish" : "Publish"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteNewsStory(story.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {newsStories.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No news stories created yet</p>
+                        <p className="text-sm">Create your first news story to get started</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

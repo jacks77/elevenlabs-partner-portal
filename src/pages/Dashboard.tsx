@@ -1,20 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send, X } from 'lucide-react';
 import OnboardingJourney from '@/components/OnboardingJourney';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
   useAnalytics(); // Track page view
 
+  const [activeNotification, setActiveNotification] = useState<any>(null);
+  const [newsStories, setNewsStories] = useState<any[]>([]);
+  const [showNotification, setShowNotification] = useState(true);
+
   const approvedMemberships = memberships.filter(m => m.is_approved);
   const onboardingCompanies = approvedMemberships.filter(m => m.company?.is_in_onboarding);
+
+  useEffect(() => {
+    fetchActiveNotification();
+    fetchNewsStories();
+  }, []);
+
+  const fetchActiveNotification = async () => {
+    try {
+      const { data } = await supabase
+        .from('notification_banners')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+      
+      setActiveNotification(data);
+    } catch (error) {
+      // No active notification, which is fine
+      console.log('No active notification');
+    }
+  };
+
+  const fetchNewsStories = async () => {
+    try {
+      const { data } = await supabase
+        .from('news_stories')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      setNewsStories(data || []);
+    } catch (error) {
+      console.error('Error fetching news stories:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -66,6 +106,23 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* Global Notification Banner */}
+      {activeNotification && showNotification && (
+        <Alert className="rounded-none border-x-0 border-t-0 bg-primary/10 border-primary/20">
+          <AlertDescription className="flex items-center justify-between">
+            <span>{activeNotification.message}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowNotification(false)}
+              className="h-auto p-1"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -153,17 +210,42 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Recent Activity Placeholder */}
+          {/* Recent Updates */}
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Stay updated with the latest changes</CardDescription>
+              <CardTitle>Recent Updates</CardTitle>
+              <CardDescription>Stay informed with the latest news and announcements</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No recent activity to display</p>
-                <p className="text-sm">Activity will appear here as you use the portal</p>
-              </div>
+              {newsStories.length > 0 ? (
+                <div className="space-y-4">
+                  {newsStories.map((story) => (
+                    <div key={story.id} className="flex gap-4 p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
+                      {story.image_url && (
+                        <img 
+                          src={story.image_url} 
+                          alt={story.headline}
+                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-2">{story.headline}</h3>
+                        {story.subheading && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{story.subheading}</p>
+                        )}
+                        <span className="text-xs text-muted-foreground mt-2 block">
+                          {new Date(story.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No recent updates to display</p>
+                  <p className="text-sm">Check back later for news and announcements</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
