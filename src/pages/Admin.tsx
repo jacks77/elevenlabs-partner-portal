@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route, Search, Bell, BellOff, Newspaper, Trash2, Plus, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserManagement } from '@/components/UserManagement';
 
 interface Company {
   id: string;
@@ -535,84 +536,94 @@ export default function Admin() {
                   <h2 className="text-2xl font-bold">Companies</h2>
                   <p className="text-muted-foreground">Manage partner companies and their settings</p>
                 </div>
-                {isSuperAdmin && (
-                  <Dialog open={showNewCompanyDialog} onOpenChange={setShowNewCompanyDialog}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Company
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create New Company</DialogTitle>
-                        <DialogDescription>
-                          Add a new company to the partner portal.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="companyName">Company Name</Label>
-                          <Input
-                            id="companyName"
-                            value={newCompanyName}
-                            onChange={(e) => setNewCompanyName(e.target.value)}
-                            placeholder="Enter company name"
-                          />
+                <div className="flex space-x-2">
+                  {isSuperAdmin && (
+                    <Button asChild variant="outline">
+                      <Link to="/admin/onboarding-journeys">
+                        <Route className="h-4 w-4 mr-2" />
+                        Onboarding Journeys
+                      </Link>
+                    </Button>
+                  )}
+                  {isSuperAdmin && (
+                    <Dialog open={showNewCompanyDialog} onOpenChange={setShowNewCompanyDialog}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Company
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Create New Company</DialogTitle>
+                          <DialogDescription>
+                            Add a new company to the partner portal.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="companyName">Company Name</Label>
+                            <Input
+                              id="companyName"
+                              value={newCompanyName}
+                              onChange={(e) => setNewCompanyName(e.target.value)}
+                              placeholder="Enter company name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="salesforceUrl">Salesforce URL</Label>
+                            <Input
+                              id="salesforceUrl"
+                              value={newCompanySalesforceUrl}
+                              onChange={(e) => setNewCompanySalesforceUrl(e.target.value)}
+                              placeholder="https://salesforce.com/..."
+                              type="url"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="track">Track</Label>
+                            <Select value={newCompanyTrack} onValueChange={setNewCompanyTrack}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select track" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Track 1">Track 1</SelectItem>
+                                <SelectItem value="Track 2">Track 2</SelectItem>
+                                <SelectItem value="Track 3">Track 3</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="leadSubmissionUrl">Lead Submission URL</Label>
+                            <Input
+                              id="leadSubmissionUrl"
+                              value={newCompanyLeadUrl}
+                              onChange={(e) => setNewCompanyLeadUrl(e.target.value)}
+                              placeholder="https://feathery.io/form/..."
+                              type="url"
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="inOnboarding"
+                              checked={newCompanyInOnboarding}
+                              onCheckedChange={(checked) => setNewCompanyInOnboarding(checked === true)}
+                            />
+                            <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button onClick={createCompany} disabled={!newCompanyName.trim()}>
+                              Create Company
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowNewCompanyDialog(false)}>
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="salesforceUrl">Salesforce URL</Label>
-                          <Input
-                            id="salesforceUrl"
-                            value={newCompanySalesforceUrl}
-                            onChange={(e) => setNewCompanySalesforceUrl(e.target.value)}
-                            placeholder="https://salesforce.com/..."
-                            type="url"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="track">Track</Label>
-                          <Select value={newCompanyTrack} onValueChange={setNewCompanyTrack}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select track" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Track 1">Track 1</SelectItem>
-                              <SelectItem value="Track 2">Track 2</SelectItem>
-                              <SelectItem value="Track 3">Track 3</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="leadSubmissionUrl">Lead Submission URL</Label>
-                          <Input
-                            id="leadSubmissionUrl"
-                            value={newCompanyLeadUrl}
-                            onChange={(e) => setNewCompanyLeadUrl(e.target.value)}
-                            placeholder="https://feathery.io/form/..."
-                            type="url"
-                          />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="inOnboarding"
-                            checked={newCompanyInOnboarding}
-                            onCheckedChange={(checked) => setNewCompanyInOnboarding(checked === true)}
-                          />
-                          <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button onClick={createCompany} disabled={!newCompanyName.trim()}>
-                            Create Company
-                          </Button>
-                          <Button variant="outline" onClick={() => setShowNewCompanyDialog(false)}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </div>
 
               <Card className="shadow-card">
@@ -767,60 +778,7 @@ export default function Admin() {
 
             {/* Users Tab */}
             <TabsContent value="users" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold">User Management</h2>
-                  <p className="text-muted-foreground">Create and manage user accounts</p>
-                </div>
-                <div className="flex space-x-2">
-                  {isSuperAdmin && (
-                    <Button asChild>
-                      <Link to="/create-user">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Create User
-                      </Link>
-                    </Button>
-                  )}
-                  <Button asChild variant="outline">
-                    <Link to="/admin/onboarding-journeys">
-                      <Route className="h-4 w-4 mr-2" />
-                      Onboarding Journeys
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create New User</CardTitle>
-                    <CardDescription>Add a new user account to the system</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button asChild className="w-full">
-                      <Link to="/create-user">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Create User Account
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Onboarding Journeys</CardTitle>
-                    <CardDescription>Manage custom onboarding workflows</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button asChild variant="outline" className="w-full">
-                      <Link to="/admin/onboarding-journeys">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Configure Journeys
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
+              <UserManagement />
             </TabsContent>
 
             {/* Notifications Tab */}

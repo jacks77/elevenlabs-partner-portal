@@ -384,6 +384,10 @@ export type Database = {
         Args: { "": string }
         Returns: string
       }
+      delete_user_account: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_user_companies: {
         Args: Record<PropertyKey, never>
         Returns: string[]
