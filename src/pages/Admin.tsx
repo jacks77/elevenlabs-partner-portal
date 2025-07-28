@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building, ArrowLeft, UserPlus } from 'lucide-react';
+import { Users, Building, ArrowLeft, UserPlus, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Company {
@@ -18,8 +18,9 @@ interface Company {
 
 
 export default function Admin() {
-  const { profile } = useAuth();
+  const { profile, memberships } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
@@ -28,6 +29,7 @@ export default function Admin() {
 
   useEffect(() => {
     fetchData();
+    fetchPendingCount();
   }, []);
 
   const fetchData = async () => {
@@ -48,6 +50,27 @@ export default function Admin() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingCount = async () => {
+    try {
+      const adminCompanies = memberships.filter(m => m.is_admin && m.is_approved).map(m => m.company_id);
+      
+      let query = supabase
+        .from('registrations')
+        .select('id', { count: 'exact' })
+        .eq('status', 'pending');
+
+      // If not super admin, only count registrations for companies they admin
+      if (!isSuperAdmin) {
+        query = query.in('approved_company_id', adminCompanies);
+      }
+
+      const { count } = await query;
+      setPendingCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending count:', error);
     }
   };
 
@@ -148,6 +171,40 @@ export default function Admin() {
               </div>
             )}
           </div>
+
+          {/* Pending Approvals Card */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  Pending Approvals
+                </div>
+                {pendingCount > 0 && (
+                  <Badge variant="destructive">{pendingCount}</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Review and approve user registration requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingCount === 0 ? (
+                <p className="text-muted-foreground">No pending registrations</p>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground">
+                    {pendingCount} registration{pendingCount !== 1 ? 's' : ''} waiting for approval
+                  </p>
+                  <Button asChild>
+                    <Link to="/admin/approvals">
+                      Review Approvals
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Companies List */}
           <Card className="shadow-card">

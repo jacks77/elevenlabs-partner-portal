@@ -13,6 +13,8 @@ import CompleteAccount from "./pages/CompleteAccount";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import CreateUser from "./pages/CreateUser";
+import InviteUser from "./pages/InviteUser";
+import AdminApprovals from "./pages/AdminApprovals";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
 import Links from "./pages/Links";
@@ -41,7 +43,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
-              <ProtectedRoute requireSuperAdmin={true}>
+              <ProtectedRoute requireAdmin>
                 <Layout>
                   <Admin />
                 </Layout>
@@ -51,6 +53,20 @@ const App = () => (
               <ProtectedRoute requireSuperAdmin={true}>
                 <Layout>
                   <CreateUser />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/invite-user" element={
+              <ProtectedRoute requireApproval>
+                <Layout>
+                  <InviteUser />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/approvals" element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <AdminApprovals />
                 </Layout>
               </ProtectedRoute>
             } />

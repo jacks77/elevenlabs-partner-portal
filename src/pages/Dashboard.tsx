@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut } from 'lucide-react';
+import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
@@ -126,6 +126,19 @@ export default function Dashboard() {
               </CardHeader>
             </Card>
           </Link>
+
+          {/* Show invite option for regular members who are admins */}
+          {isAdmin && !isSuperAdmin && (
+            <Link to="/invite-user">
+              <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
+                <CardHeader className="text-center">
+                  <Send className="h-8 w-8 mx-auto text-primary" />
+                  <CardTitle className="text-lg">Invite User</CardTitle>
+                  <CardDescription>Invite new users to your company</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          )}
 
             {isAdmin && (
               <Link to="/admin">
