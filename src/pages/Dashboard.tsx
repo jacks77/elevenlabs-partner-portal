@@ -127,8 +127,8 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          {/* Show invite option for regular members who are admins */}
-          {isAdmin && !isSuperAdmin && (
+          {/* Show invite option for all admins */}
+          {isAdmin && (
             <Link to="/invite-user">
               <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
                 <CardHeader className="text-center">
