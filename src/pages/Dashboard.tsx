@@ -69,41 +69,11 @@ export default function Dashboard() {
         <div className="space-y-8">
           {/* Welcome Section */}
           <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold">Welcome back!</h2>
+            <h2 className="text-3xl font-bold">Welcome back, {user.email?.split('@')[0] || 'Partner'}!</h2>
             <p className="text-muted-foreground">
-              Access your company resources and collaborate with your team.
+              Access documentation, links, and resources for your ElevenLabs Partner Journey!
             </p>
           </div>
-
-          {/* Company Memberships */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Your Companies
-              </CardTitle>
-              <CardDescription>
-                Companies you're a member of
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {approvedMemberships.map((membership) => (
-                  <div key={membership.company_id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div>
-                      <p className="font-medium">{membership.company?.name || 'Unknown Company'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {membership.is_admin ? 'Administrator' : 'Member'}
-                      </p>
-                    </div>
-                    {membership.is_admin && (
-                      <Badge variant="secondary">Admin</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

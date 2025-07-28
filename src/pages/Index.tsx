@@ -34,7 +34,7 @@ const Index = () => {
           Partner Portal
         </h1>
         <p className="text-xl text-muted-foreground max-w-md">
-          Access exclusive resources, documents, and collaborate with your team.
+          Access resources, content, and tools for your partnership journey.
         </p>
         <div className="flex gap-4 justify-center">
           <Button asChild variant="hero">

@@ -80,6 +80,13 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
       <Card className="w-full max-w-md shadow-card">
         <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/1b3b5fc2-0efe-4db7-8f9b-e724e26f7c81.png" 
+              alt="ElevenLabs Logo" 
+              className="h-12 w-auto"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Partner Portal
           </CardTitle>
