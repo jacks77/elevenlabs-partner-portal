@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route } from 'lucide-react';
+import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink, Route, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Company {
@@ -24,6 +24,8 @@ interface Company {
 export default function Admin() {
   const { profile, memberships } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -32,7 +34,11 @@ export default function Admin() {
   const [newCompanyInOnboarding, setNewCompanyInOnboarding] = useState(false);
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
   const [editingCompany, setEditingCompany] = useState<string | null>(null);
-  const [editingSalesforceUrl, setEditingSalesforceUrl] = useState('');
+  const [editingData, setEditingData] = useState({
+    salesforceUrl: '',
+    track: '',
+    inOnboarding: false
+  });
 
   const isSuperAdmin = profile?.is_super_admin;
 
@@ -40,6 +46,14 @@ export default function Admin() {
     fetchData();
     fetchPendingCount();
   }, []);
+
+  useEffect(() => {
+    // Filter companies based on search term
+    const filtered = companies.filter(company =>
+      company.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredCompanies(filtered);
+  }, [companies, searchTerm]);
 
   const fetchData = async () => {
     try {
@@ -120,21 +134,33 @@ export default function Admin() {
     }
   };
 
-  const startEditingSalesforce = (company: Company) => {
+  const startEditingCompany = (company: Company) => {
     setEditingCompany(company.id);
-    setEditingSalesforceUrl(company.partner_salesforce_record || '');
+    setEditingData({
+      salesforceUrl: company.partner_salesforce_record || '',
+      track: company.track || '',
+      inOnboarding: company.is_in_onboarding || false
+    });
   };
 
-  const cancelEditingSalesforce = () => {
+  const cancelEditingCompany = () => {
     setEditingCompany(null);
-    setEditingSalesforceUrl('');
+    setEditingData({
+      salesforceUrl: '',
+      track: '',
+      inOnboarding: false
+    });
   };
 
-  const saveSalesforceUrl = async (companyId: string) => {
+  const saveCompanyChanges = async (companyId: string) => {
     try {
       const { error } = await supabase
         .from('companies')
-        .update({ partner_salesforce_record: editingSalesforceUrl.trim() || null })
+        .update({
+          partner_salesforce_record: editingData.salesforceUrl.trim() || null,
+          track: editingData.track || null,
+          is_in_onboarding: editingData.inOnboarding
+        })
         .eq('id', companyId);
 
       if (error) throw error;
@@ -142,21 +168,30 @@ export default function Admin() {
       // Update local state
       setCompanies(prev => prev.map(company => 
         company.id === companyId 
-          ? { ...company, partner_salesforce_record: editingSalesforceUrl.trim() || undefined }
+          ? { 
+              ...company, 
+              partner_salesforce_record: editingData.salesforceUrl.trim() || undefined,
+              track: editingData.track || undefined,
+              is_in_onboarding: editingData.inOnboarding
+            }
           : company
       ));
 
       setEditingCompany(null);
-      setEditingSalesforceUrl('');
+      setEditingData({
+        salesforceUrl: '',
+        track: '',
+        inOnboarding: false
+      });
 
       toast({
-        title: "Salesforce record updated",
-        description: "Partner Salesforce record has been updated successfully."
+        title: "Company updated",
+        description: "Company settings have been updated successfully."
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Failed to update Salesforce record",
+        title: "Failed to update company",
         description: error.message
       });
     }
@@ -307,78 +342,132 @@ export default function Admin() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Building className="h-5 w-5 mr-2" />
-                Companies
+                Companies ({filteredCompanies.length})
               </CardTitle>
               <CardDescription>
                 Manage company settings and information
               </CardDescription>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search companies..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {companies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">{company.name}</p>
+              <div className="space-y-2">
+                {filteredCompanies.map((company) => (
+                  <div key={company.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <p className="font-medium truncate">{company.name}</p>
+                        <div className="flex items-center gap-2">
+                          {company.track && (
+                            <Badge variant="outline" className="text-xs">{company.track}</Badge>
+                          )}
+                          {company.is_in_onboarding && (
+                            <Badge variant="secondary" className="text-xs">Onboarding</Badge>
+                          )}
+                        </div>
+                      </div>
                       
-                      {/* Partner Salesforce Record - Only visible to admins/super admins */}
-                      {(isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && (
-                        <div className="mt-2">
-                          <Label className="text-xs text-muted-foreground">Partner Salesforce Record:</Label>
-                          {editingCompany === company.id ? (
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Input
-                                value={editingSalesforceUrl}
-                                onChange={(e) => setEditingSalesforceUrl(e.target.value)}
-                                placeholder="https://salesforce.com/..."
-                                className="text-sm"
-                                type="url"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => saveSalesforceUrl(company.id)}
-                                className="shrink-0"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={cancelEditingSalesforce}
-                                className="shrink-0"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      {/* Compact company details */}
+                      {(isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && editingCompany !== company.id && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {company.partner_salesforce_record ? (
+                            <a
+                              href={company.partner_salesforce_record}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-primary underline inline-flex items-center"
+                            >
+                              Salesforce Record <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
                           ) : (
-                            <div className="flex items-center space-x-2 mt-1">
-                              {company.partner_salesforce_record ? (
-                                <a
-                                  href={company.partner_salesforce_record}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:text-primary/80 underline flex items-center"
-                                >
-                                  {company.partner_salesforce_record}
-                                  <ExternalLink className="h-3 w-3 ml-1" />
-                                </a>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">Not set</span>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => startEditingSalesforce(company)}
-                                className="shrink-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <span>No Salesforce record</span>
                           )}
                         </div>
                       )}
+
+                      {/* Edit form */}
+                      {editingCompany === company.id && (
+                        <div className="mt-3 space-y-3 p-3 bg-muted/50 rounded-md">
+                          <div>
+                            <Label className="text-xs">Salesforce URL</Label>
+                            <Input
+                              value={editingData.salesforceUrl}
+                              onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
+                              placeholder="https://salesforce.com/..."
+                              className="text-sm mt-1"
+                              type="url"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Track</Label>
+                            <Select 
+                              value={editingData.track} 
+                              onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
+                            >
+                              <SelectTrigger className="text-sm mt-1">
+                                <SelectValue placeholder="Select track" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">No Track</SelectItem>
+                                <SelectItem value="Track 1">Track 1</SelectItem>
+                                <SelectItem value="Track 2">Track 2</SelectItem>
+                                <SelectItem value="Track 3">Track 3</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`onboarding-${company.id}`}
+                              checked={editingData.inOnboarding}
+                              onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
+                            />
+                            <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => saveCompanyChanges(company.id)}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditingCompany}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    
+                    {editingCompany !== company.id && (isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditingCompany(company)}
+                        className="shrink-0 ml-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
+                {filteredCompanies.length === 0 && searchTerm && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No companies found matching "{searchTerm}"
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
