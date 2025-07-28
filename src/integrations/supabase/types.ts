@@ -72,6 +72,7 @@ export type Database = {
           id: string
           is_in_onboarding: boolean | null
           kickoff_call_date: string | null
+          lead_submission_url: string | null
           name: string
           partner_salesforce_record: string | null
           technical_enablement_date: string | null
@@ -84,6 +85,7 @@ export type Database = {
           id?: string
           is_in_onboarding?: boolean | null
           kickoff_call_date?: string | null
+          lead_submission_url?: string | null
           name: string
           partner_salesforce_record?: string | null
           technical_enablement_date?: string | null
@@ -96,6 +98,7 @@ export type Database = {
           id?: string
           is_in_onboarding?: boolean | null
           kickoff_call_date?: string | null
+          lead_submission_url?: string | null
           name?: string
           partner_salesforce_record?: string | null
           technical_enablement_date?: string | null
@@ -178,6 +181,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           id: string
+          tags: string[] | null
           title: string | null
           url: string | null
         }
@@ -185,6 +189,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           id?: string
+          tags?: string[] | null
           title?: string | null
           url?: string | null
         }
@@ -192,6 +197,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           id?: string
+          tags?: string[] | null
           title?: string | null
           url?: string | null
         }

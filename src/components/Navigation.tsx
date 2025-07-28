@@ -39,8 +39,8 @@ export function Navigation() {
 
   const navLinks = [
     { path: '/dashboard', label: 'Dashboard' },
-    { path: '/documents', label: 'Documents' },
-    { path: '/links', label: 'Links' },
+    { path: '/content', label: 'Content' },
+    { path: '/lead-submission', label: 'Lead Submission' },
     ...(isSuperAdmin ? [
       { path: '/admin', label: 'Admin' },
       { path: '/create-user', label: 'Create User' },

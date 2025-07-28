@@ -21,6 +21,7 @@ interface Company {
   partner_salesforce_record?: string;
   is_in_onboarding?: boolean;
   track?: string;
+  lead_submission_url?: string;
 }
 
 interface NotificationBanner {
@@ -52,12 +53,14 @@ export default function Admin() {
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanySalesforceUrl, setNewCompanySalesforceUrl] = useState('');
   const [newCompanyTrack, setNewCompanyTrack] = useState('');
+  const [newCompanyLeadUrl, setNewCompanyLeadUrl] = useState('');
   const [newCompanyInOnboarding, setNewCompanyInOnboarding] = useState(false);
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
   const [editingCompany, setEditingCompany] = useState<string | null>(null);
   const [editingData, setEditingData] = useState({
     salesforceUrl: '',
     track: '',
+    leadSubmissionUrl: '',
     inOnboarding: false
   });
 
@@ -172,6 +175,7 @@ export default function Admin() {
           name: newCompanyName.trim(),
           partner_salesforce_record: newCompanySalesforceUrl.trim() || null,
           track: newCompanyTrack || null,
+          lead_submission_url: newCompanyLeadUrl.trim() || null,
           is_in_onboarding: newCompanyInOnboarding
         })
         .select()
@@ -183,6 +187,7 @@ export default function Admin() {
       setNewCompanyName('');
       setNewCompanySalesforceUrl('');
       setNewCompanyTrack('');
+      setNewCompanyLeadUrl('');
       setNewCompanyInOnboarding(false);
       setShowNewCompanyDialog(false);
       
@@ -204,6 +209,7 @@ export default function Admin() {
     setEditingData({
       salesforceUrl: company.partner_salesforce_record || '',
       track: company.track || '',
+      leadSubmissionUrl: company.lead_submission_url || '',
       inOnboarding: company.is_in_onboarding || false
     });
   };
@@ -213,6 +219,7 @@ export default function Admin() {
     setEditingData({
       salesforceUrl: '',
       track: '',
+      leadSubmissionUrl: '',
       inOnboarding: false
     });
   };
@@ -224,6 +231,7 @@ export default function Admin() {
         .update({
           partner_salesforce_record: editingData.salesforceUrl.trim() || null,
           track: editingData.track || null,
+          lead_submission_url: editingData.leadSubmissionUrl.trim() || null,
           is_in_onboarding: editingData.inOnboarding
         })
         .eq('id', companyId);
@@ -233,12 +241,13 @@ export default function Admin() {
       // Update local state
       setCompanies(prev => prev.map(company => 
         company.id === companyId 
-          ? { 
-              ...company, 
-              partner_salesforce_record: editingData.salesforceUrl.trim() || undefined,
-              track: editingData.track || undefined,
-              is_in_onboarding: editingData.inOnboarding
-            }
+            ? { 
+                ...company, 
+                partner_salesforce_record: editingData.salesforceUrl.trim() || undefined,
+                track: editingData.track || undefined,
+                lead_submission_url: editingData.leadSubmissionUrl.trim() || undefined,
+                is_in_onboarding: editingData.inOnboarding
+              }
           : company
       ));
 
@@ -246,6 +255,7 @@ export default function Admin() {
       setEditingData({
         salesforceUrl: '',
         track: '',
+        leadSubmissionUrl: '',
         inOnboarding: false
       });
 
@@ -606,6 +616,16 @@ export default function Admin() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div>
+                          <Label htmlFor="leadSubmissionUrl">Lead Submission URL</Label>
+                          <Input
+                            id="leadSubmissionUrl"
+                            value={newCompanyLeadUrl}
+                            onChange={(e) => setNewCompanyLeadUrl(e.target.value)}
+                            placeholder="https://feathery.io/form/..."
+                            type="url"
+                          />
+                        </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id="inOnboarding"
@@ -702,6 +722,16 @@ export default function Admin() {
                                     <SelectItem value="Track 3">Track 3</SelectItem>
                                   </SelectContent>
                                 </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">Lead Submission URL</Label>
+                                <Input
+                                  value={editingData.leadSubmissionUrl}
+                                  onChange={(e) => setEditingData(prev => ({ ...prev, leadSubmissionUrl: e.target.value }))}
+                                  placeholder="https://feathery.io/form/..."
+                                  className="text-sm mt-1"
+                                  type="url"
+                                />
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Checkbox

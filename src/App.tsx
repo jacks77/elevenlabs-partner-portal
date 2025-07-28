@@ -17,8 +17,8 @@ import InviteUser from "./pages/InviteUser";
 import AdminApprovals from "./pages/AdminApprovals";
 import OnboardingJourneys from "./pages/OnboardingJourneys";
 import Settings from "./pages/Settings";
-import Documents from "./pages/Documents";
-import Links from "./pages/Links";
+import Content from "./pages/Content";
+import LeadSubmission from "./pages/LeadSubmission";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
@@ -85,17 +85,17 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/documents" element={
+            <Route path="/content" element={
               <ProtectedRoute>
                 <Layout>
-                  <Documents />
+                  <Content />
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/links" element={
+            <Route path="/lead-submission" element={
               <ProtectedRoute>
                 <Layout>
-                  <Links />
+                  <LeadSubmission />
                 </Layout>
               </ProtectedRoute>
             } />
