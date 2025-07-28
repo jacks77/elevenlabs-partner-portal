@@ -8,14 +8,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Users, Building, ArrowLeft, UserPlus, Clock } from 'lucide-react';
+import { Users, Building, ArrowLeft, UserPlus, Clock, Edit, Check, X, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Company {
   id: string;
   name: string;
+  partner_salesforce_record?: string;
 }
-
 
 export default function Admin() {
   const { profile, memberships } = useAuth();
@@ -24,6 +24,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyDialog, setShowNewCompanyDialog] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<string | null>(null);
+  const [editingSalesforceUrl, setEditingSalesforceUrl] = useState('');
 
   const isSuperAdmin = profile?.is_super_admin;
 
@@ -98,6 +100,48 @@ export default function Admin() {
       toast({
         variant: "destructive",
         title: "Failed to create company",
+        description: error.message
+      });
+    }
+  };
+
+  const startEditingSalesforce = (company: Company) => {
+    setEditingCompany(company.id);
+    setEditingSalesforceUrl(company.partner_salesforce_record || '');
+  };
+
+  const cancelEditingSalesforce = () => {
+    setEditingCompany(null);
+    setEditingSalesforceUrl('');
+  };
+
+  const saveSalesforceUrl = async (companyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ partner_salesforce_record: editingSalesforceUrl.trim() || null })
+        .eq('id', companyId);
+
+      if (error) throw error;
+
+      // Update local state
+      setCompanies(prev => prev.map(company => 
+        company.id === companyId 
+          ? { ...company, partner_salesforce_record: editingSalesforceUrl.trim() || undefined }
+          : company
+      ));
+
+      setEditingCompany(null);
+      setEditingSalesforceUrl('');
+
+      toast({
+        title: "Salesforce record updated",
+        description: "Partner Salesforce record has been updated successfully."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update Salesforce record",
         description: error.message
       });
     }
@@ -220,10 +264,66 @@ export default function Admin() {
             <CardContent>
               <div className="space-y-3">
                 {companies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div>
+                  <div key={company.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex-1">
                       <p className="font-medium">{company.name}</p>
-                      <p className="text-sm text-muted-foreground">Company ID: {company.id}</p>
+                      
+                      {/* Partner Salesforce Record - Only visible to admins/super admins */}
+                      {(isSuperAdmin || memberships.some(m => m.is_admin && m.is_approved)) && (
+                        <div className="mt-2">
+                          <Label className="text-xs text-muted-foreground">Partner Salesforce Record:</Label>
+                          {editingCompany === company.id ? (
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Input
+                                value={editingSalesforceUrl}
+                                onChange={(e) => setEditingSalesforceUrl(e.target.value)}
+                                placeholder="https://salesforce.com/..."
+                                className="text-sm"
+                                type="url"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => saveSalesforceUrl(company.id)}
+                                className="shrink-0"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditingSalesforce}
+                                className="shrink-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2 mt-1">
+                              {company.partner_salesforce_record ? (
+                                <a
+                                  href={company.partner_salesforce_record}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary hover:text-primary/80 underline flex items-center"
+                                >
+                                  {company.partner_salesforce_record}
+                                  <ExternalLink className="h-3 w-3 ml-1" />
+                                </a>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">Not set</span>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => startEditingSalesforce(company)}
+                                className="shrink-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

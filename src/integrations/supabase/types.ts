@@ -69,16 +69,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          partner_salesforce_record: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          partner_salesforce_record?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          partner_salesforce_record?: string | null
         }
         Relationships: []
       }
