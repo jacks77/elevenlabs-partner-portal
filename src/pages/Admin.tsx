@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
@@ -643,74 +644,94 @@ export default function Admin() {
                             </div>
                           </div>
                           
-                          {editingCompany !== company.id && (
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {company.partner_salesforce_record ? (
-                                <a
-                                  href={company.partner_salesforce_record}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:text-primary underline inline-flex items-center"
-                                >
-                                  Salesforce Record <ExternalLink className="h-3 w-3 ml-1" />
-                                </a>
-                              ) : (
-                                <span>No Salesforce record</span>
-                              )}
-                            </div>
-                          )}
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {company.partner_salesforce_record ? (
+                              <a
+                                href={company.partner_salesforce_record}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-primary underline inline-flex items-center"
+                              >
+                                Salesforce Record <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            ) : (
+                              <span>No Salesforce record</span>
+                            )}
+                          </div>
+                        </div>
 
-                          {editingCompany === company.id && (
-                            <div className="mt-3 space-y-3 p-3 bg-muted/50 rounded-md">
-                              <div>
-                                <Label className="text-xs">Salesforce URL</Label>
-                                <Input
-                                  value={editingData.salesforceUrl}
-                                  onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
-                                  placeholder="https://salesforce.com/..."
-                                  className="text-sm mt-1"
-                                  type="url"
-                                />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditingCompany(company)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 bg-popover border border-border shadow-lg z-50">
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <h4 className="font-medium">Edit {company.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Update company settings and information.
+                                </p>
                               </div>
-                              <div>
-                                <Label className="text-xs">Track</Label>
-                                <Select 
-                                  value={editingData.track} 
-                                  onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
-                                >
-                                  <SelectTrigger className="text-sm mt-1">
-                                    <SelectValue placeholder="Select track" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="">No Track</SelectItem>
-                                    <SelectItem value="Track 1">Track 1</SelectItem>
-                                    <SelectItem value="Track 2">Track 2</SelectItem>
-                                    <SelectItem value="Track 3">Track 3</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              
+                              <div className="space-y-3">
+                                <div>
+                                  <Label className="text-xs">Salesforce URL</Label>
+                                  <Input
+                                    value={editingData.salesforceUrl}
+                                    onChange={(e) => setEditingData(prev => ({ ...prev, salesforceUrl: e.target.value }))}
+                                    placeholder="https://salesforce.com/..."
+                                    className="text-sm mt-1"
+                                    type="url"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Track</Label>
+                                  <Select 
+                                    value={editingData.track} 
+                                    onValueChange={(value) => setEditingData(prev => ({ ...prev, track: value }))}
+                                  >
+                                    <SelectTrigger className="text-sm mt-1">
+                                      <SelectValue placeholder="Select track" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-popover border border-border z-50">
+                                      <SelectItem value="">No Track</SelectItem>
+                                      <SelectItem value="Track 1">Track 1</SelectItem>
+                                      <SelectItem value="Track 2">Track 2</SelectItem>
+                                      <SelectItem value="Track 3">Track 3</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Lead Submission URL</Label>
+                                  <Input
+                                    value={editingData.leadSubmissionUrl}
+                                    onChange={(e) => setEditingData(prev => ({ ...prev, leadSubmissionUrl: e.target.value }))}
+                                    placeholder="https://feathery.io/form/..."
+                                    className="text-sm mt-1"
+                                    type="url"
+                                  />
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`onboarding-${company.id}`}
+                                    checked={editingData.inOnboarding}
+                                    onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
+                                  />
+                                  <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
+                                </div>
                               </div>
-                              <div>
-                                <Label className="text-xs">Lead Submission URL</Label>
-                                <Input
-                                  value={editingData.leadSubmissionUrl}
-                                  onChange={(e) => setEditingData(prev => ({ ...prev, leadSubmissionUrl: e.target.value }))}
-                                  placeholder="https://feathery.io/form/..."
-                                  className="text-sm mt-1"
-                                  type="url"
-                                />
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`onboarding-${company.id}`}
-                                  checked={editingData.inOnboarding}
-                                  onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, inOnboarding: checked === true }))}
-                                />
-                                <Label htmlFor={`onboarding-${company.id}`} className="text-xs">In onboarding stage</Label>
-                              </div>
-                              <div className="flex space-x-2">
+                              
+                              <div className="flex space-x-2 pt-2">
                                 <Button
                                   size="sm"
                                   onClick={() => saveCompanyChanges(company.id)}
+                                  className="flex-1"
                                 >
                                   <Check className="h-4 w-4 mr-1" />
                                   Save
@@ -719,24 +740,15 @@ export default function Admin() {
                                   size="sm"
                                   variant="outline"
                                   onClick={cancelEditingCompany}
+                                  className="flex-1"
                                 >
                                   <X className="h-4 w-4 mr-1" />
                                   Cancel
                                 </Button>
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        {editingCompany !== company.id && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => startEditingCompany(company)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     ))}
 
