@@ -78,34 +78,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Partner Portal
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium">{user.email}</p>
-                <div className="flex space-x-1">
-                  {isSuperAdmin && (
-                    <Badge variant="destructive" className="text-xs">Super Admin</Badge>
-                  )}
-                  {isAdmin && !isSuperAdmin && (
-                    <Badge variant="secondary" className="text-xs">Admin</Badge>
-                  )}
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Global Notification Banner */}
       {activeNotification && showNotification && (
