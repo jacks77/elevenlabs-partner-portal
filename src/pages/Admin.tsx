@@ -491,40 +491,6 @@ export default function Admin() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="companies"]') as HTMLElement)?.click()}>
-                  <CardHeader className="text-center pb-4">
-                    <Building className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Companies</CardTitle>
-                    <CardDescription>Manage partner companies</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="users"]') as HTMLElement)?.click()}>
-                  <CardHeader className="text-center pb-4">
-                    <Users className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Users</CardTitle>
-                    <CardDescription>Create and manage users</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="notifications"]') as HTMLElement)?.click()}>
-                  <CardHeader className="text-center pb-4">
-                    <Bell className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Notifications</CardTitle>
-                    <CardDescription>Global notification banners</CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer" onClick={() => (document.querySelector('[value="news"]') as HTMLElement)?.click()}>
-                  <CardHeader className="text-center pb-4">
-                    <Newspaper className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">News</CardTitle>
-                    <CardDescription>Manage news updates</CardDescription>
-                  </CardHeader>
-                </Card>
-              </div>
 
               {/* Pending Approvals */}
               <Card className="shadow-card">
