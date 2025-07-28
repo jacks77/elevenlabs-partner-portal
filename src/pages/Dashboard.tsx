@@ -127,18 +127,16 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          {/* Show invite option for all admins */}
-          {isAdmin && (
-            <Link to="/invite-user">
-              <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-                <CardHeader className="text-center">
-                  <Send className="h-8 w-8 mx-auto text-primary" />
-                  <CardTitle className="text-lg">Invite User</CardTitle>
-                  <CardDescription>Invite new users to your company</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          )}
+          {/* All registered users can invite */}
+          <Link to="/invite-user">
+            <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
+              <CardHeader className="text-center">
+                <Send className="h-8 w-8 mx-auto text-primary" />
+                <CardTitle className="text-lg">Invite User</CardTitle>
+                <CardDescription>Invite new users to your company</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
 
             {isAdmin && (
               <Link to="/admin">
