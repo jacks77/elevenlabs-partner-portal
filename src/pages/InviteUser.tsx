@@ -12,7 +12,7 @@ import { ArrowLeft, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function InviteUser() {
-  const { memberships } = useAuth();
+  const { memberships, profile } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -23,6 +23,18 @@ export default function InviteUser() {
 
   // Show companies where user is a member and approved
   const memberCompanies = memberships.filter(m => m.is_approved);
+  
+  // Check if user is admin (super admin or company admin)
+  const isAdmin = profile?.is_super_admin || memberships.some(m => m.is_admin && m.is_approved);
+  
+  // For non-admin users, auto-select their company
+  const userCompanyId = memberCompanies[0]?.company_id || '';
+  
+  React.useEffect(() => {
+    if (!isAdmin && userCompanyId && !formData.companyId) {
+      setFormData(prev => ({ ...prev, companyId: userCompanyId }));
+    }
+  }, [isAdmin, userCompanyId, formData.companyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +78,7 @@ export default function InviteUser() {
       setFormData({
         email: '',
         fullName: '',
-        companyId: '',
+        companyId: isAdmin ? '' : userCompanyId,
         notes: ''
       });
     } catch (error: any) {
@@ -147,21 +159,30 @@ export default function InviteUser() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="company">Company *</Label>
-                <Select value={formData.companyId} onValueChange={(value) => setFormData(prev => ({ ...prev, companyId: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {memberCompanies.map((membership) => (
-                      <SelectItem key={membership.company_id} value={membership.company_id}>
-                        {membership.company?.name || 'Unknown Company'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isAdmin ? (
+                <div>
+                  <Label htmlFor="company">Company *</Label>
+                  <Select value={formData.companyId} onValueChange={(value) => setFormData(prev => ({ ...prev, companyId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {memberCompanies.map((membership) => (
+                        <SelectItem key={membership.company_id} value={membership.company_id}>
+                          {membership.company?.name || 'Unknown Company'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label>Company</Label>
+                  <div className="p-2 bg-muted rounded-md text-sm">
+                    {memberCompanies[0]?.company?.name || 'Your Company'}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="notes">Notes (Optional)</Label>
