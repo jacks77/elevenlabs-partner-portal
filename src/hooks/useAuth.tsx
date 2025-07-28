@@ -72,8 +72,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const createdAt = new Date(profileData.created_at);
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           
+          console.log('Checking password change requirement:', {
+            profileCreatedAt: createdAt,
+            oneDayAgo,
+            shouldShowPrompt: createdAt > oneDayAgo
+          });
+          
           if (createdAt > oneDayAgo) {
             // If created within last 24 hours, show password change dialog
+            console.log('Showing password change dialog for new user');
             setShowPasswordChange(true);
           }
         }
