@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, UserPlus, RefreshCw, Building } from 'lucide-react';
+import { ArrowLeft, UserPlus, RefreshCw, Building, Copy, Check, MessageSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generateSecurePassword } from '@/lib/passwordGenerator';
 
@@ -23,6 +23,9 @@ export default function CreateUser() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [createNewCompany, setCreateNewCompany] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [slackMessage, setSlackMessage] = useState('');
+  const [showSlackMessage, setShowSlackMessage] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -140,6 +143,11 @@ export default function CreateUser() {
 
       console.log('User created successfully:', data.user);
 
+      // Generate Slack message
+      const generatedSlackMessage = `Hi! I have created the Partner Portal account for ${formData.fullName}. The login email is ${formData.email}. The default password is ${formData.password} but you will be required to change this on login. Let me know if you have any questions.`;
+      setSlackMessage(generatedSlackMessage);
+      setShowSlackMessage(true);
+
       const successMessage = createNewCompany 
         ? `${formData.fullName} can now sign in with email: ${formData.email}. Company "${formData.newCompanyName}" was also created.`
         : `${formData.fullName} can now sign in with email: ${formData.email}`;
@@ -175,10 +183,45 @@ export default function CreateUser() {
   const handleGeneratePassword = () => {
     const newPassword = generateSecurePassword();
     setFormData(prev => ({ ...prev, password: newPassword }));
+    setPasswordCopied(false);
     toast({
       title: "Password generated",
       description: "A secure password has been generated."
     });
+  };
+
+  const copyPasswordToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(formData.password);
+      setPasswordCopied(true);
+      toast({
+        title: "Password copied",
+        description: "Password has been copied to clipboard."
+      });
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Unable to copy password to clipboard."
+      });
+    }
+  };
+
+  const copySlackMessageToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(slackMessage);
+      toast({
+        title: "Slack message copied",
+        description: "Message has been copied to clipboard."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Unable to copy message to clipboard."
+      });
+    }
   };
 
   if (!isSuperAdmin) {
@@ -244,7 +287,7 @@ export default function CreateUser() {
                   <div className="flex gap-2">
                     <Input
                       id="password"
-                      type="password"
+                      type="text"
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       placeholder="Enter default password"
@@ -257,6 +300,15 @@ export default function CreateUser() {
                       className="shrink-0"
                     >
                       <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={copyPasswordToClipboard}
+                      className="shrink-0"
+                      disabled={!formData.password}
+                    >
+                      {passwordCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -339,6 +391,37 @@ export default function CreateUser() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Slack Message Card */}
+          {showSlackMessage && (
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Slack Message
+                </CardTitle>
+                <CardDescription>
+                  Copy this message to send to the user via Slack
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm">{slackMessage}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={copySlackMessageToClipboard}
+                    className="w-full"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

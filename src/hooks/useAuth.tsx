@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
 
 interface UserProfile {
   user_id: string;
   is_super_admin: boolean;
+  created_at?: string;
 }
 
 interface CompanyMembership {
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [memberships, setMemberships] = useState<CompanyMembership[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   const fetchUserData = async (currentUser: User | null) => {
     if (!currentUser) {
@@ -63,6 +66,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error('Error fetching profile:', profileError);
       } else {
         setProfile(profileData);
+        
+        // Check if this is a first-time login (created recently)
+        if (profileData && profileData.created_at) {
+          const createdAt = new Date(profileData.created_at);
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          
+          if (createdAt > oneDayAgo) {
+            // If created within last 24 hours, show password change dialog
+            setShowPasswordChange(true);
+          }
+        }
       }
 
       // Fetch company memberships
@@ -176,7 +190,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refresh,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <PasswordChangeDialog
+        open={showPasswordChange}
+        onOpenChange={setShowPasswordChange}
+        onSuccess={() => {
+          setShowPasswordChange(false);
+          // Optionally refresh profile to update any flags
+          if (user) fetchUserData(user);
+        }}
+      />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
