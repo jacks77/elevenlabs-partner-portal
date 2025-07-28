@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function InviteUser() {
-  const { memberships, profile } = useAuth();
+  const { memberships, profile, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -20,6 +21,7 @@ export default function InviteUser() {
     notes: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showDomainWarning, setShowDomainWarning] = useState(false);
 
   // Show companies where user is a member and approved
   const memberCompanies = memberships.filter(m => m.is_approved);
@@ -36,7 +38,20 @@ export default function InviteUser() {
     }
   }, [isAdmin, userCompanyId, formData.companyId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const getEmailDomain = (email: string) => {
+    return email.split('@')[1]?.toLowerCase();
+  };
+
+  const checkEmailDomain = () => {
+    if (!user?.email || !formData.email) return true;
+    
+    const userDomain = getEmailDomain(user.email);
+    const inviteeDomain = getEmailDomain(formData.email);
+    
+    return userDomain === inviteeDomain;
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.fullName || !formData.companyId) {
       toast({
@@ -47,6 +62,16 @@ export default function InviteUser() {
       return;
     }
 
+    // Check email domain and show warning if different
+    if (!checkEmailDomain()) {
+      setShowDomainWarning(true);
+      return;
+    }
+
+    await submitInvitation();
+  };
+
+  const submitInvitation = async () => {
     setLoading(true);
     try {
       // Generate invite code
@@ -89,6 +114,7 @@ export default function InviteUser() {
       });
     } finally {
       setLoading(false);
+      setShowDomainWarning(false);
     }
   };
 
@@ -135,7 +161,7 @@ export default function InviteUser() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email">Email Address *</Label>
                 <Input
@@ -201,6 +227,24 @@ export default function InviteUser() {
             </form>
           </CardContent>
         </Card>
+
+        <AlertDialog open={showDomainWarning} onOpenChange={setShowDomainWarning}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Different Email Domain</AlertDialogTitle>
+              <AlertDialogDescription>
+                The email domain ({getEmailDomain(formData.email)}) is different from yours ({getEmailDomain(user?.email || '')}). 
+                Are you sure you want to invite this user to your company?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={submitInvitation}>
+                Yes, Send Invitation
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
