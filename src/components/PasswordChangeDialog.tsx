@@ -16,12 +16,10 @@ interface PasswordChangeDialogProps {
 
 export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: PasswordChangeDialogProps) {
   const [passwords, setPasswords] = useState({
-    current: '',
     new: '',
     confirm: ''
   });
   const [showPasswords, setShowPasswords] = useState({
-    current: false,
     new: false,
     confirm: false
   });
@@ -32,7 +30,7 @@ export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: Password
     e.preventDefault();
     setError('');
 
-    if (!passwords.current || !passwords.new || !passwords.confirm) {
+    if (!passwords.new || !passwords.confirm) {
       setError('Please fill in all fields');
       return;
     }
@@ -64,7 +62,7 @@ export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: Password
 
       onSuccess();
       onOpenChange(false);
-      setPasswords({ current: '', new: '', confirm: '' });
+      setPasswords({ new: '', confirm: '' });
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -96,29 +94,6 @@ export function PasswordChangeDialog({ open, onOpenChange, onSuccess }: Password
         </Alert>
 
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          <div>
-            <Label htmlFor="current-password">Current Password</Label>
-            <div className="relative">
-              <Input
-                id="current-password"
-                type={showPasswords.current ? "text" : "password"}
-                value={passwords.current}
-                onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
-                placeholder="Enter your current password"
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => togglePasswordVisibility('current')}
-              >
-                {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
           <div>
             <Label htmlFor="new-password">New Password</Label>
             <div className="relative">
