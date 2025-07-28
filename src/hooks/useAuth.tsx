@@ -7,6 +7,7 @@ interface UserProfile {
   user_id: string;
   is_super_admin: boolean;
   created_at?: string;
+  has_changed_default_password?: boolean;
 }
 
 interface CompanyMembership {
@@ -67,19 +68,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         setProfile(profileData);
         
-        // Check if this is a first-time login (created recently)
-        if (profileData && profileData.created_at) {
+        // Check if this is a first-time login (created recently AND hasn't changed default password)
+        if (profileData && profileData.created_at && !profileData.has_changed_default_password) {
           const createdAt = new Date(profileData.created_at);
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           
           console.log('Checking password change requirement:', {
             profileCreatedAt: createdAt,
             oneDayAgo,
-            shouldShowPrompt: createdAt > oneDayAgo
+            hasChangedPassword: profileData.has_changed_default_password,
+            shouldShowPrompt: createdAt > oneDayAgo && !profileData.has_changed_default_password
           });
           
           if (createdAt > oneDayAgo) {
-            // If created within last 24 hours, show password change dialog
+            // If created within last 24 hours AND hasn't changed password, show dialog
             console.log('Showing password change dialog for new user');
             setShowPasswordChange(true);
           }
@@ -203,10 +205,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       <PasswordChangeDialog
         open={showPasswordChange}
         onOpenChange={setShowPasswordChange}
-        onSuccess={() => {
+        onSuccess={async () => {
           setShowPasswordChange(false);
-          // Optionally refresh profile to update any flags
-          if (user) fetchUserData(user);
+          
+          // Update the user profile to mark password as changed
+          if (user) {
+            await supabase
+              .from('user_profiles')
+              .update({ has_changed_default_password: true })
+              .eq('user_id', user.id);
+            
+            // Refresh profile to get updated data
+            fetchUserData(user);
+          }
         }}
       />
     </AuthContext.Provider>

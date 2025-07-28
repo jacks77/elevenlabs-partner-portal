@@ -256,16 +256,19 @@ export type Database = {
       user_profiles: {
         Row: {
           created_at: string
+          has_changed_default_password: boolean
           is_super_admin: boolean | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          has_changed_default_password?: boolean
           is_super_admin?: boolean | null
           user_id: string
         }
         Update: {
           created_at?: string
+          has_changed_default_password?: boolean
           is_super_admin?: boolean | null
           user_id?: string
         }
