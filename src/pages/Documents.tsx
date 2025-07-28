@@ -331,31 +331,95 @@ export default function Documents() {
                   <Label htmlFor="tags">Tags</Label>
                   <div className="space-y-2">
                     <div className="flex space-x-2">
-                      <Input
-                        id="tags"
-                        value={currentTag}
-                        onChange={(e) => setCurrentTag(e.target.value)}
-                        placeholder="Add a tag"
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                      />
+                      <div className="relative flex-1">
+                        <Input
+                          id="tags"
+                          value={currentTag}
+                          onChange={(e) => setCurrentTag(e.target.value)}
+                          placeholder="Add a tag or choose from existing"
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                        />
+                        {/* Show existing tags dropdown when typing */}
+                        {currentTag && availableTags.filter(tag => 
+                          tag.toLowerCase().includes(currentTag.toLowerCase()) && 
+                          !newDocument.tags.includes(tag)
+                        ).length > 0 && (
+                          <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-popover border rounded-md shadow-md max-h-32 overflow-y-auto">
+                            {availableTags
+                              .filter(tag => 
+                                tag.toLowerCase().includes(currentTag.toLowerCase()) && 
+                                !newDocument.tags.includes(tag)
+                              )
+                              .map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewDocument(prev => ({
+                                      ...prev,
+                                      tags: [...prev.tags, tag]
+                                    }));
+                                    setCurrentTag('');
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                                >
+                                  {tag}
+                                </button>
+                              ))
+                            }
+                          </div>
+                        )}
+                      </div>
                       <Button type="button" onClick={addTag} variant="outline" size="sm">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
+                    
+                    {/* Show existing tags as clickable badges */}
+                    {availableTags.length > 0 && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Existing tags (click to add):</Label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {availableTags
+                            .filter(tag => !newDocument.tags.includes(tag))
+                            .map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="cursor-pointer hover:bg-primary/10 text-xs"
+                                onClick={() => {
+                                  setNewDocument(prev => ({
+                                    ...prev,
+                                    tags: [...prev.tags, tag]
+                                  }));
+                                }}
+                              >
+                                <Tag className="w-3 h-3 mr-1" />
+                                {tag}
+                              </Badge>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    )}
+                    
                     {newDocument.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {newDocument.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => removeTag(tag)}
-                              className="ml-1 text-muted-foreground hover:text-foreground"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </Badge>
-                        ))}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Selected tags:</Label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {newDocument.tags.map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTag(tag)}
+                                className="ml-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
