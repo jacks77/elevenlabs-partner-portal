@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Plus, Search, X, ExternalLink, FileText, Link } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -113,7 +113,11 @@ export default function Content() {
       setAllTags(Array.from(tags));
     } catch (error) {
       console.error("Error fetching content:", error);
-      toast.error("Failed to load content");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load content"
+      });
     } finally {
       setLoading(false);
     }
@@ -137,7 +141,11 @@ export default function Content() {
     e.preventDefault();
     
     if (!newItem.title || !newItem.url) {
-      toast.error("Please fill in all required fields");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all required fields"
+      });
       return;
     }
 
@@ -155,13 +163,20 @@ export default function Content() {
 
       if (error) throw error;
 
-      toast.success(`${newItem.type === 'link' ? 'Link' : 'Document'} added successfully`);
+      toast({
+        title: "Success",
+        description: `${newItem.type === 'link' ? 'Link' : 'Document'} added successfully`
+      });
       setIsDialogOpen(false);
       setNewItem({ type: 'link', title: "", url: "", company_id: "", tags: [] });
       fetchItems();
     } catch (error) {
       console.error("Error adding content:", error);
-      toast.error(`Failed to add ${newItem.type}`);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to add ${newItem.type}`
+      });
     }
   };
 
@@ -174,11 +189,18 @@ export default function Content() {
 
       if (error) throw error;
 
-      toast.success(`${type === 'link' ? 'Link' : 'Document'} deleted successfully`);
+      toast({
+        title: "Success",
+        description: `${type === 'link' ? 'Link' : 'Document'} deleted successfully`
+      });
       fetchItems();
     } catch (error) {
       console.error("Error deleting content:", error);
-      toast.error(`Failed to delete ${type}`);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to delete ${type}`
+      });
     }
   };
 
