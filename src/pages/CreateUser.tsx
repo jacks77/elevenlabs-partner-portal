@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, UserPlus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, UserPlus, RefreshCw, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generateSecurePassword } from '@/lib/passwordGenerator';
 
@@ -21,11 +22,13 @@ export default function CreateUser() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
+  const [createNewCompany, setCreateNewCompany] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     fullName: '',
     companyId: '',
+    newCompanyName: '',
     isAdmin: false
   });
 
@@ -59,7 +62,9 @@ export default function CreateUser() {
 
   const createUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password || !formData.fullName || !formData.companyId) {
+    
+    // Validate required fields
+    if (!formData.email || !formData.password || !formData.fullName) {
       toast({
         variant: "destructive",
         title: "Missing fields",
@@ -68,9 +73,50 @@ export default function CreateUser() {
       return;
     }
 
+    // Validate company selection
+    if (createNewCompany && !formData.newCompanyName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Missing company name",
+        description: "Please enter a name for the new company."
+      });
+      return;
+    }
+
+    if (!createNewCompany && !formData.companyId) {
+      toast({
+        variant: "destructive",
+        title: "Missing company",
+        description: "Please select a company."
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      console.log('Creating user with:', formData);
+      let companyId = formData.companyId;
+
+      // Create new company if needed
+      if (createNewCompany) {
+        console.log('Creating new company:', formData.newCompanyName);
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .insert([{ name: formData.newCompanyName.trim() }])
+          .select()
+          .single();
+
+        if (companyError) {
+          throw new Error(`Failed to create company: ${companyError.message}`);
+        }
+
+        companyId = companyData.id;
+        console.log('Company created successfully:', companyData);
+
+        // Refresh companies list for future use
+        fetchCompanies();
+      }
+
+      console.log('Creating user with company ID:', companyId);
 
       // Call the edge function to create the user
       const { data, error } = await supabase.functions.invoke('create-user-admin', {
@@ -78,7 +124,7 @@ export default function CreateUser() {
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          companyId: formData.companyId,
+          companyId: companyId,
           isAdmin: formData.isAdmin
         }
       });
@@ -94,9 +140,13 @@ export default function CreateUser() {
 
       console.log('User created successfully:', data.user);
 
+      const successMessage = createNewCompany 
+        ? `${formData.fullName} can now sign in with email: ${formData.email}. Company "${formData.newCompanyName}" was also created.`
+        : `${formData.fullName} can now sign in with email: ${formData.email}`;
+
       toast({
         title: "User created successfully",
-        description: `${formData.fullName} can now sign in with email: ${formData.email}`
+        description: successMessage
       });
 
       // Reset form
@@ -105,8 +155,10 @@ export default function CreateUser() {
         password: '',
         fullName: '',
         companyId: '',
+        newCompanyName: '',
         isAdmin: false
       });
+      setCreateNewCompany(false);
 
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -212,20 +264,55 @@ export default function CreateUser() {
                   </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="company">Company *</Label>
-                  <Select value={formData.companyId} onValueChange={(value) => setFormData(prev => ({ ...prev, companyId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a company" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="company">Company *</Label>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="create-new-company" className="text-sm">Create new company</Label>
+                      <Switch
+                        id="create-new-company"
+                        checked={createNewCompany}
+                        onCheckedChange={(checked) => {
+                          setCreateNewCompany(checked);
+                          if (checked) {
+                            setFormData(prev => ({ ...prev, companyId: '' }));
+                          } else {
+                            setFormData(prev => ({ ...prev, newCompanyName: '' }));
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {createNewCompany ? (
+                    <div>
+                      <Input
+                        id="newCompanyName"
+                        type="text"
+                        value={formData.newCompanyName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, newCompanyName: e.target.value }))}
+                        placeholder="Enter new company name"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <Building className="inline w-3 h-3 mr-1" />
+                        A new company will be created with this name
+                      </p>
+                    </div>
+                  ) : (
+                    <Select value={formData.companyId} onValueChange={(value) => setFormData(prev => ({ ...prev, companyId: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 <div>
