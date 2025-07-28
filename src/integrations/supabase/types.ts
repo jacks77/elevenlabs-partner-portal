@@ -205,6 +205,63 @@ export type Database = {
           },
         ]
       }
+      news_stories: {
+        Row: {
+          content: string | null
+          created_at: string
+          headline: string
+          id: string
+          image_url: string | null
+          is_published: boolean
+          subheading: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          headline: string
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          subheading?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          headline?: string
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          subheading?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_banners: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          message: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       registrations: {
         Row: {
           approved_by: string | null
