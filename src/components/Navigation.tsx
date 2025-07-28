@@ -43,7 +43,6 @@ export function Navigation() {
     { path: '/lead-submission', label: 'Lead Submission' },
     ...(isSuperAdmin ? [
       { path: '/admin', label: 'Admin' },
-      { path: '/create-user', label: 'Create User' },
       { path: '/settings', label: 'Settings' },
       { path: '/analytics', label: 'Analytics' }
     ] : [])
