@@ -63,19 +63,27 @@ export function ElevenLabsTeamWidget() {
 
       if (error) throw error;
 
-      // Fetch partner manager emails from auth
+      // Fetch partner manager emails from auth using our admin-users edge function
       const companiesWithPartnerManagers = await Promise.all(
         (companiesData || []).map(async (company) => {
           if (company.partner_manager_id) {
             try {
-              const { data: authData } = await supabase.auth.admin.getUserById(company.partner_manager_id);
-              return {
-                ...company,
-                partner_manager: {
-                  ...company.partner_manager,
-                  email: authData.user?.email
+              const { data: userData, error } = await supabase.functions.invoke('admin-users', {
+                body: { 
+                  action: 'get',
+                  userId: company.partner_manager_id 
                 }
-              };
+              });
+              
+              if (!error && userData?.user) {
+                return {
+                  ...company,
+                  partner_manager: {
+                    ...company.partner_manager,
+                    email: userData.user.email
+                  }
+                };
+              }
             } catch (error) {
               console.error('Error fetching partner manager email:', error);
               return company;

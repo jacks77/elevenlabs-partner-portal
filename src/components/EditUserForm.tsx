@@ -115,10 +115,14 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
 
       // Update email if changed
       if (data.email !== user.email) {
-        const { error: emailError } = await supabase.auth.admin.updateUserById(
-          user.id,
-          { email: data.email }
-        );
+        const { data: updateResponse, error: emailError } = await supabase.functions.invoke('admin-users', {
+          body: {
+            action: 'update',
+            userId: user.id,
+            updates: { email: data.email }
+          }
+        });
+        
         if (emailError) throw emailError;
       }
 

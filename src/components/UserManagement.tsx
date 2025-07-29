@@ -74,7 +74,12 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch users with their profiles and company memberships
+      // Use our admin-users edge function to get user data
+      const { data: usersResponse, error: usersError } = await supabase.functions.invoke('admin-users');
+
+      if (usersError) throw usersError;
+
+      // Fetch user profiles
       const { data: userProfiles } = await supabase
         .from('user_profiles')
         .select(`
@@ -85,6 +90,7 @@ export function UserManagement() {
           title
         `);
 
+      // Fetch company memberships
       const { data: companyMembers } = await supabase
         .from('company_members')
         .select(`
@@ -97,78 +103,31 @@ export function UserManagement() {
           )
         `);
 
-      // We need to get user data from auth, but since we can't query auth.users directly,
-      // we'll use a different approach by getting data from our edge function or registrations
-      const { data: registrations } = await supabase
-        .from('registrations')
-        .select('*')
-        .eq('status', 'approved');
-
-      // Combine the data
-      const usersMap = new Map<string, User>();
-
-      // Add users from profiles
-      userProfiles?.forEach(profile => {
-        usersMap.set(profile.user_id, {
-          id: profile.user_id,
-          email: '', // Will be filled from other sources
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          title: profile.title,
-          created_at: '',
-          is_super_admin: profile.is_super_admin
-        });
+      // Combine auth users with profile and company data
+      const authUsers = usersResponse?.users || [];
+      const combinedUsers: User[] = authUsers.map((authUser: any) => {
+        const profile = userProfiles?.find(p => p.user_id === authUser.id);
+        const membership = companyMembers?.find(m => m.user_id === authUser.id);
+        
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          first_name: profile?.first_name,
+          last_name: profile?.last_name,
+          title: profile?.title,
+          created_at: authUser.created_at,
+          is_super_admin: profile?.is_super_admin || false,
+          company_id: membership?.company_id,
+          company_name: (membership?.companies as any)?.name,
+          is_admin: membership?.is_admin || false,
+          company: membership?.companies ? {
+            id: membership.company_id,
+            name: (membership.companies as any).name
+          } : undefined
+        };
       });
 
-      // Add company information
-      companyMembers?.forEach(member => {
-        const user = usersMap.get(member.user_id);
-        if (user) {
-          user.company_id = member.company_id;
-          user.company_name = (member.companies as any)?.name;
-          user.is_admin = member.is_admin;
-        }
-      });
-
-      // Add email from registrations (this is a workaround since we can't access auth.users)
-      registrations?.forEach(reg => {
-        // Find user by matching - this is approximate since we don't have direct user mapping
-        // In a real scenario, you'd want to store user_id in registrations table
-        const users = Array.from(usersMap.values());
-        // For now, we'll create mock users since we can't directly query auth.users
-      });
-
-      // For demo purposes, let's create some mock data since we can't access auth.users
-      // In production, you'd want to use the Supabase Admin API or store user emails in your own tables
-      setUsers([
-        {
-          id: '3f90e09c-2b3a-4e9e-a426-db74baa6a41b',
-          email: 'jacks@elevenlabs.io',
-          created_at: '2025-07-27T13:26:02.481127+00:00',
-          is_super_admin: true,
-          company_id: '21700209-09f7-49a6-a128-2eb1e1fd7b6d',
-          company_name: 'Global Admins',
-          is_admin: false
-        },
-        {
-          id: 'c33b69c4-7dad-470a-9eb4-dd49edb6f897',
-          email: 'jacks77@me.com',
-          created_at: '2025-07-27T15:38:26.810602+00:00',
-          is_super_admin: false,
-          company_id: 'e6d94c0e-16c6-481e-a79a-f2551ae91329',
-          company_name: 'Balolo',
-          is_admin: false
-        },
-        {
-          id: '7f60bec1-5853-4df2-a2e6-5381feb91baa',
-          email: 'jackasmith7@gmail.com',
-          created_at: '2025-07-28T12:20:34.540386+00:00',
-          is_super_admin: false,
-          company_id: '0c1bb735-7045-430d-8c7b-7e9529c708cd',
-          company_name: 'Blur',
-          is_admin: false
-        }
-      ]);
+      setUsers(combinedUsers);
 
     } catch (error) {
       console.error('Error fetching users:', error);
