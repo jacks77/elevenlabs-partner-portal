@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Company {
   id: string;
@@ -12,6 +13,14 @@ interface Company {
   is_in_onboarding?: boolean;
   track?: string;
   lead_submission_url?: string;
+  partner_manager_id?: string;
+  slack_channel_url?: string;
+}
+
+interface PartnerManager {
+  user_id: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface EditCompanyFormProps {
@@ -26,8 +35,53 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
     partner_salesforce_record: company.partner_salesforce_record || '',
     track: company.track || '',
     lead_submission_url: company.lead_submission_url || '',
-    is_in_onboarding: company.is_in_onboarding || false
+    is_in_onboarding: company.is_in_onboarding || false,
+    partner_manager_id: company.partner_manager_id || '',
+    slack_channel_url: company.slack_channel_url || ''
   });
+  
+  const [partnerManagers, setPartnerManagers] = useState<PartnerManager[]>([]);
+
+  useEffect(() => {
+    fetchPartnerManagers();
+  }, []);
+
+  const fetchPartnerManagers = async () => {
+    try {
+      // Get users who are members of Global Admins company
+      const { data: globalAdminsCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('name', 'Global Admins')
+        .single();
+
+      if (globalAdminsCompany) {
+        const { data: members } = await supabase
+          .from('company_members')
+          .select(`
+            user_id,
+            user_profiles!inner (
+              user_id,
+              first_name,
+              last_name
+            )
+          `)
+          .eq('company_id', globalAdminsCompany.id)
+          .eq('is_approved', true);
+
+        if (members) {
+          const managers = members.map(member => ({
+            user_id: member.user_id,
+            first_name: (member.user_profiles as any)?.first_name,
+            last_name: (member.user_profiles as any)?.last_name
+          }));
+          setPartnerManagers(managers);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching partner managers:', error);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +134,36 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
           value={formData.lead_submission_url}
           onChange={(e) => setFormData(prev => ({ ...prev, lead_submission_url: e.target.value }))}
           placeholder="https://feathery.io/form/..."
+          type="url"
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="partnerManager">Partner Manager</Label>
+        <Select value={formData.partner_manager_id} onValueChange={(value) => setFormData(prev => ({ ...prev, partner_manager_id: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select partner manager" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">No Partner Manager</SelectItem>
+            {partnerManagers.map((manager) => (
+              <SelectItem key={manager.user_id} value={manager.user_id}>
+                {manager.first_name && manager.last_name 
+                  ? `${manager.first_name} ${manager.last_name}` 
+                  : manager.user_id}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <Label htmlFor="slackChannel">Slack Channel URL</Label>
+        <Input
+          id="slackChannel"
+          value={formData.slack_channel_url}
+          onChange={(e) => setFormData(prev => ({ ...prev, slack_channel_url: e.target.value }))}
+          placeholder="https://slack.com/channels/..."
           type="url"
         />
       </div>

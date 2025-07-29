@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send, X } from 'lucide-react';
 import OnboardingJourney from '@/components/OnboardingJourney';
+import { ElevenLabsTeamWidget } from '@/components/ElevenLabsTeamWidget';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
@@ -115,6 +116,9 @@ export default function Dashboard() {
               Access documentation, links, and resources for your ElevenLabs Partner Journey!
             </p>
           </div>
+
+          {/* ElevenLabs Team Widget */}
+          <ElevenLabsTeamWidget />
 
           {/* Onboarding Journey - Show for companies in onboarding */}
           {onboardingCompanies.map((membership) => (
