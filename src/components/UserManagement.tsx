@@ -79,7 +79,10 @@ export function UserManagement() {
         .from('user_profiles')
         .select(`
           user_id,
-          is_super_admin
+          is_super_admin,
+          first_name,
+          last_name,
+          title
         `);
 
       const { data: companyMembers } = await supabase
@@ -109,6 +112,9 @@ export function UserManagement() {
         usersMap.set(profile.user_id, {
           id: profile.user_id,
           email: '', // Will be filled from other sources
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          title: profile.title,
           created_at: '',
           is_super_admin: profile.is_super_admin
         });
