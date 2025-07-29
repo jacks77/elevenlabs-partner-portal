@@ -12,6 +12,7 @@ import OnboardingJourney from '@/components/OnboardingJourney';
 import { ElevenLabsTeamWidget } from '@/components/ElevenLabsTeamWidget';
 import { SocialFooter } from '@/components/SocialFooter';
 import PinnedContent from '@/components/PinnedContent';
+import ElevenLabsConvAI from '@/components/ElevenLabsConvAI';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
@@ -209,6 +210,12 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+      
+      {/* ElevenLabs ConvAI Widget */}
+      <ElevenLabsConvAI 
+        agentId="cjUmqmsP3wOtM6saX1Gg" 
+        className="fixed bottom-6 right-6 z-50"
+      />
     </div>
   );
 }
