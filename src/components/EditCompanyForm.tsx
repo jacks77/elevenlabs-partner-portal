@@ -36,7 +36,7 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
     track: company.track || '',
     lead_submission_url: company.lead_submission_url || '',
     is_in_onboarding: company.is_in_onboarding || false,
-    partner_manager_id: company.partner_manager_id || '',
+    partner_manager_id: company.partner_manager_id || 'none',
     slack_channel_url: company.slack_channel_url || ''
   });
   
@@ -85,7 +85,11 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const dataToSave = {
+      ...formData,
+      partner_manager_id: formData.partner_manager_id === 'none' ? null : formData.partner_manager_id
+    };
+    onSave(dataToSave);
   };
 
   return (
@@ -145,7 +149,7 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
             <SelectValue placeholder="Select partner manager" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No Partner Manager</SelectItem>
+            <SelectItem value="none">No Partner Manager</SelectItem>
             {partnerManagers.map((manager) => (
               <SelectItem key={manager.user_id} value={manager.user_id}>
                 {manager.first_name && manager.last_name 
