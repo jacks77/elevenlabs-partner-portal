@@ -73,14 +73,6 @@ export default function ContentCard({
         </div>
       )}
 
-      {/* New Badge */}
-      {isNew && (
-        <div className="absolute top-2 left-2 z-10">
-          <Badge variant="default" className="text-xs">
-            New
-          </Badge>
-        </div>
-      )}
 
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
