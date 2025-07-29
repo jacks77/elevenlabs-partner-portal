@@ -51,9 +51,14 @@ serve(async (req) => {
       )
     }
 
-    // Check if user is super admin using the secure function
-    const { data: isSuperAdmin, error: checkError } = await supabaseAdmin
-      .rpc('is_super_admin');
+    // Check if user is super admin by querying user_profiles directly
+    const { data: profileData, error: checkError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('is_super_admin')
+      .eq('user_id', user.user.id)
+      .single();
+
+    const isSuperAdmin = profileData?.is_super_admin || false;
 
     if (checkError || !isSuperAdmin) {
       console.error('Profile error or not super admin:', { checkError, isSuperAdmin });
