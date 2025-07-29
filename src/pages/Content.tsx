@@ -362,15 +362,6 @@ export default function ContentHub() {
         </div>
         
         <div className="flex gap-2 mt-4 md:mt-0">
-          {/* Support Actions */}
-          <Button
-            variant="outline"
-            onClick={() => window.open('mailto:support@elevenlabs.io', '_blank')}
-          >
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Open Ticket
-          </Button>
-          
           {partnerManager && (
             <Button
               variant="outline"
