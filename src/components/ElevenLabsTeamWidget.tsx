@@ -147,14 +147,7 @@ export function ElevenLabsTeamWidget() {
       {companies.map((company) => (
         <Card key={company.id} className="w-full shadow-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <img 
-                src="/lovable-uploads/1b3b5fc2-0efe-4db7-8f9b-e724e26f7c81.png" 
-                alt="ElevenLabs Logo" 
-                className="h-6 w-auto"
-              />
-              Your ElevenLabs Team
-            </CardTitle>
+            <CardTitle>Your ElevenLabs Team</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
