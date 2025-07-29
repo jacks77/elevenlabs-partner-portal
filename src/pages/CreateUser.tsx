@@ -10,7 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, UserPlus, RefreshCw, Building, Copy, Check, MessageSquare } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { generateSecurePassword } from '@/lib/passwordGenerator';
+import { generateSecurePassword, validatePassword } from '@/lib/passwordGenerator';
+import { validateFormData, emailSchema, nameSchema, companyNameSchema, passwordSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface Company {
   id: string;
@@ -34,6 +36,7 @@ export default function CreateUser() {
     newCompanyName: '',
     isAdmin: false
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const isSuperAdmin = profile?.is_super_admin;
 
@@ -65,32 +68,38 @@ export default function CreateUser() {
 
   const createUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
     
-    // Validate required fields
-    if (!formData.email || !formData.password || !formData.fullName) {
+    // Validate form data
+    const formSchema = z.object({
+      email: emailSchema,
+      password: passwordSchema,
+      fullName: nameSchema,
+      companyId: createNewCompany ? z.string().optional() : z.string().min(1, 'Company selection is required'),
+      newCompanyName: createNewCompany ? companyNameSchema : z.string().optional(),
+      isAdmin: z.boolean()
+    });
+
+    const validation = validateFormData(formData, formSchema);
+    
+    if (!validation.success) {
+      setValidationErrors(validation.errors || {});
       toast({
         variant: "destructive",
-        title: "Missing fields",
-        description: "Please fill in all required fields."
+        title: "Validation errors",
+        description: "Please correct the errors below."
       });
       return;
     }
 
-    // Validate company selection
-    if (createNewCompany && !formData.newCompanyName.trim()) {
+    // Additional password validation
+    const passwordCheck = validatePassword(formData.password);
+    if (!passwordCheck.isValid) {
+      setValidationErrors({ password: passwordCheck.errors });
       toast({
         variant: "destructive",
-        title: "Missing company name",
-        description: "Please enter a name for the new company."
-      });
-      return;
-    }
-
-    if (!createNewCompany && !formData.companyId) {
-      toast({
-        variant: "destructive",
-        title: "Missing company",
-        description: "Please select a company."
+        title: "Password requirements not met",
+        description: passwordCheck.errors.join(', ')
       });
       return;
     }
@@ -267,7 +276,11 @@ export default function CreateUser() {
                     onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                     placeholder="Enter full name"
                     required
+                    className={validationErrors.fullName ? 'border-destructive' : ''}
                   />
+                  {validationErrors.fullName && (
+                    <p className="text-sm text-destructive mt-1">{validationErrors.fullName[0]}</p>
+                  )}
                 </div>
 
                 <div>
@@ -279,7 +292,11 @@ export default function CreateUser() {
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="Enter email address"
                     required
+                    className={validationErrors.email ? 'border-destructive' : ''}
                   />
+                  {validationErrors.email && (
+                    <p className="text-sm text-destructive mt-1">{validationErrors.email[0]}</p>
+                  )}
                 </div>
 
                 <div>
@@ -292,6 +309,7 @@ export default function CreateUser() {
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       placeholder="Enter default password"
                       required
+                      className={validationErrors.password ? 'border-destructive' : ''}
                     />
                     <Button
                       type="button"
@@ -311,8 +329,11 @@ export default function CreateUser() {
                       {passwordCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {validationErrors.password && (
+                    <p className="text-sm text-destructive mt-1">{validationErrors.password[0]}</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    User can change this password after logging in
+                    Must be 8+ chars with uppercase, lowercase, number, and special character
                   </p>
                 </div>
 
@@ -345,7 +366,11 @@ export default function CreateUser() {
                         onChange={(e) => setFormData(prev => ({ ...prev, newCompanyName: e.target.value }))}
                         placeholder="Enter new company name"
                         required
+                        className={validationErrors.newCompanyName ? 'border-destructive' : ''}
                       />
+                      {validationErrors.newCompanyName && (
+                        <p className="text-sm text-destructive mt-1">{validationErrors.newCompanyName[0]}</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         <Building className="inline w-3 h-3 mr-1" />
                         A new company will be created with this name

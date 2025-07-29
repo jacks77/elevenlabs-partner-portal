@@ -37,8 +37,58 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Input validation
+    if (!email || !password || !fullName || !companyId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: email, password, fullName, companyId' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate password complexity
+    if (password.length < 8 || 
+        !/[A-Z]/.test(password) || 
+        !/[a-z]/.test(password) || 
+        !/[0-9]/.test(password) || 
+        !/[^A-Za-z0-9]/.test(password)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Verify the requesting user is a super admin
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const token = authHeader.replace('Bearer ', '');
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -53,15 +103,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is super admin
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('is_super_admin')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Check if user is super admin using the secure function
+    const { data: isSuperAdmin, error: checkError } = await supabase
+      .rpc('is_super_admin');
 
-    if (profileError || !profile?.is_super_admin) {
-      console.error('Profile error or not super admin:', { profileError, profile });
+    if (checkError || !isSuperAdmin) {
+      console.error('Profile error or not super admin:', { checkError, isSuperAdmin });
+      
+      // Log security event
+      await supabase
+        .from('security_audit_log')
+        .insert({
+          user_id: user.id,
+          action: 'unauthorized_user_creation_attempt',
+          details: { 
+            attempted_email: email,
+            attempted_company_id: companyId,
+            user_agent: req.headers.get('User-Agent')
+          },
+          ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP')
+        });
+
       return new Response(
         JSON.stringify({ error: 'Access denied. Super admin privileges required.' }),
         { 
@@ -154,6 +216,22 @@ Deno.serve(async (req) => {
     }
 
     console.log('User added to company');
+
+    // Log successful user creation
+    await supabase
+      .from('security_audit_log')
+      .insert({
+        user_id: user.id,
+        action: 'user_created_by_admin',
+        details: { 
+          created_user_id: authData.user.id,
+          created_user_email: email,
+          company_id: companyId,
+          is_admin: isAdmin,
+          user_agent: req.headers.get('User-Agent')
+        },
+        ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP')
+      });
 
     return new Response(
       JSON.stringify({ 

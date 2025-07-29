@@ -31,28 +31,53 @@ serve(async (req) => {
       )
     }
 
-    // Check if user is super admin using the service role client
-    const { data: profile } = await supabaseAdmin
-      .from('user_profiles')
-      .select('is_super_admin')
-      .eq('user_id', user.user.id)
-      .single()
-
-    if (!profile?.is_super_admin) {
-      return new Response(
-        JSON.stringify({ error: 'Access denied. Only super admins can delete users.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // Get the target user ID from request body
     const { targetUserId } = await req.json()
     
+    // Input validation
     if (!targetUserId) {
       return new Response(
         JSON.stringify({ error: 'Target user ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(targetUserId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid user ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user is super admin using the secure function
+    const { data: isSuperAdmin, error: checkError } = await supabaseAdmin
+      .rpc('is_super_admin');
+
+    if (checkError || !isSuperAdmin) {
+      console.error('Profile error or not super admin:', { checkError, isSuperAdmin });
+      
+      // Log unauthorized attempt
+      await supabaseAdmin
+        .from('security_audit_log')
+        .insert({
+          user_id: user.user.id,
+          action: 'unauthorized_user_deletion_attempt',
+          details: { 
+            attempted_target_user_id: targetUserId,
+            user_agent: req.headers.get('User-Agent')
+          },
+          ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP')
+        });
+
+      return new Response(
+        JSON.stringify({ error: 'Access denied. Super admin privileges required.' }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // First, manually clean up related data since we're using service role
@@ -96,6 +121,19 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Log successful deletion
+    await supabaseAdmin
+      .from('security_audit_log')
+      .insert({
+        user_id: user.user.id,
+        action: 'user_deleted_by_admin',
+        details: { 
+          deleted_user_id: targetUserId,
+          user_agent: req.headers.get('User-Agent')
+        },
+        ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP')
+      });
 
     return new Response(
       JSON.stringify({ message: 'User deleted successfully' }),

@@ -354,6 +354,36 @@ export type Database = {
           },
         ]
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sitewide_settings: {
         Row: {
           created_at: string
@@ -450,6 +480,10 @@ export type Database = {
       }
       is_company_admin: {
         Args: { target_company_id: string }
+        Returns: boolean
+      }
+      is_elevenlabs_member: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_super_admin: {
