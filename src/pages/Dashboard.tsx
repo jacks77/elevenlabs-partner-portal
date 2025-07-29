@@ -16,7 +16,9 @@ export default function Dashboard() {
 
   const [activeNotification, setActiveNotification] = useState<any>(null);
   const [newsStories, setNewsStories] = useState<any[]>([]);
-  const [showNotification, setShowNotification] = useState(true);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(
+    () => new Set(JSON.parse(localStorage.getItem('dismissedNotifications') || '[]'))
+  );
 
   const approvedMemberships = memberships.filter(m => m.is_approved);
   const onboardingCompanies = approvedMemberships.filter(m => m.company?.is_in_onboarding);
@@ -76,18 +78,25 @@ export default function Dashboard() {
     await signOut();
   };
 
+  const handleDismissNotification = (notificationId: string) => {
+    const newDismissed = new Set(dismissedNotifications);
+    newDismissed.add(notificationId);
+    setDismissedNotifications(newDismissed);
+    localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
 
       {/* Global Notification Banner */}
-      {activeNotification && showNotification && (
+      {activeNotification && !dismissedNotifications.has(activeNotification.id) && (
         <Alert className="rounded-none border-x-0 border-t-0 bg-primary/10 border-primary/20">
           <AlertDescription className="flex items-center justify-between">
             <span>{activeNotification.message}</span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowNotification(false)}
+              onClick={() => handleDismissNotification(activeNotification.id)}
               className="h-auto p-1"
             >
               <X className="h-4 w-4" />
