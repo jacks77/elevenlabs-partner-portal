@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ExternalLink, MessageSquare } from 'lucide-react';
+import { TierDisplay } from './TierDisplay';
 
 interface PartnerManager {
   user_id: string;
@@ -19,6 +20,8 @@ interface CompanyWithPartnerManager {
   track?: string;
   partner_manager_id?: string;
   slack_channel_url?: string;
+  commission_tier?: string;
+  certification_tier?: string;
   partner_manager?: PartnerManager;
 }
 
@@ -48,6 +51,8 @@ export function ElevenLabsTeamWidget() {
           track,
           partner_manager_id,
           slack_channel_url,
+          commission_tier,
+          certification_tier,
           partner_manager:user_profiles!companies_partner_manager_id_fkey (
             user_id,
             first_name,
@@ -155,7 +160,20 @@ export function ElevenLabsTeamWidget() {
             )}
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Tier Information */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+                  Your Status
+                </h3>
+                <TierDisplay 
+                  companyId={company.id}
+                  track={company.track}
+                  commissionTier={company.commission_tier}
+                  certificationTier={company.certification_tier}
+                />
+              </div>
+
               {/* Partner Manager Section */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">

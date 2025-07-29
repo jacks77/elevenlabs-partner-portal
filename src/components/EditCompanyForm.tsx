@@ -15,6 +15,8 @@ interface Company {
   lead_submission_url?: string;
   partner_manager_id?: string;
   slack_channel_url?: string;
+  commission_tier?: string;
+  certification_tier?: string;
 }
 
 interface PartnerManager {
@@ -37,7 +39,9 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
     lead_submission_url: company.lead_submission_url || '',
     is_in_onboarding: company.is_in_onboarding || false,
     partner_manager_id: company.partner_manager_id || 'none',
-    slack_channel_url: company.slack_channel_url || ''
+    slack_channel_url: company.slack_channel_url || '',
+    commission_tier: company.commission_tier || 'Registered',
+    certification_tier: company.certification_tier || 'Registered'
   });
   
   const [partnerManagers, setPartnerManagers] = useState<PartnerManager[]>([]);
@@ -178,6 +182,40 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
         />
         <Label htmlFor="inOnboarding">Company is in onboarding stage</Label>
       </div>
+
+      <div>
+        <Label htmlFor="commissionTier">Commission Tier</Label>
+        <Select value={formData.commission_tier} onValueChange={(value) => setFormData(prev => ({ ...prev, commission_tier: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select commission tier" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Registered">Registered</SelectItem>
+            <SelectItem value="Bronze">Bronze</SelectItem>
+            <SelectItem value="Silver">Silver</SelectItem>
+            <SelectItem value="Gold">Gold</SelectItem>
+            <SelectItem value="Platinum">Platinum</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {(formData.track === 'Track 2' || formData.track === 'Track 3') && (
+        <div>
+          <Label htmlFor="certificationTier">Certification Tier</Label>
+          <Select value={formData.certification_tier} onValueChange={(value) => setFormData(prev => ({ ...prev, certification_tier: value }))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select certification tier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Registered">Registered</SelectItem>
+              <SelectItem value="Bronze">Bronze</SelectItem>
+              <SelectItem value="Silver">Silver</SelectItem>
+              <SelectItem value="Gold">Gold</SelectItem>
+              <SelectItem value="Platinum">Platinum</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       
       <div className="flex space-x-2 pt-4">
         <Button type="submit" disabled={!formData.name.trim()}>

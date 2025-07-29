@@ -66,6 +66,8 @@ export type Database = {
       }
       companies: {
         Row: {
+          certification_tier: string | null
+          commission_tier: string | null
           created_at: string
           first_closed_won: boolean | null
           first_lead_registered: boolean | null
@@ -81,6 +83,8 @@ export type Database = {
           track: string | null
         }
         Insert: {
+          certification_tier?: string | null
+          commission_tier?: string | null
           created_at?: string
           first_closed_won?: boolean | null
           first_lead_registered?: boolean | null
@@ -96,6 +100,8 @@ export type Database = {
           track?: string | null
         }
         Update: {
+          certification_tier?: string | null
+          commission_tier?: string | null
           created_at?: string
           first_closed_won?: boolean | null
           first_lead_registered?: boolean | null
@@ -347,6 +353,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sitewide_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {

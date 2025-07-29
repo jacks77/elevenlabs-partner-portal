@@ -33,6 +33,8 @@ interface Company {
   lead_submission_url?: string;
   partner_manager_id?: string;
   slack_channel_url?: string;
+  commission_tier?: string;
+  certification_tier?: string;
 }
 
 interface NotificationBanner {
@@ -683,7 +685,9 @@ export default function Admin() {
           track: updatedData.track || null,
           is_in_onboarding: updatedData.is_in_onboarding || false,
           partner_manager_id: updatedData.partner_manager_id,
-          slack_channel_url: updatedData.slack_channel_url?.trim() || null
+          slack_channel_url: updatedData.slack_channel_url?.trim() || null,
+          commission_tier: updatedData.commission_tier || 'Registered',
+          certification_tier: updatedData.certification_tier || 'Registered'
         })
         .eq('id', editingCompany.id);
 
