@@ -120,6 +120,8 @@ export function CompanyManagement() {
         track: newCompany.track ? trackMapping[newCompany.track] || newCompany.track : null
       };
 
+      console.log('Creating company with data:', companyData);
+
       const { data, error } = await supabase
         .from('companies')
         .insert([companyData])
