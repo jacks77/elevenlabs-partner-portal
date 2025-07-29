@@ -47,11 +47,20 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
   const getStageStatus = (stage: string) => {
     if (!company) return 'pending';
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
     switch (stage) {
       case 'kickoff':
-        return company.kickoff_call_date ? 'completed' : 'pending';
+        if (!company.kickoff_call_date) return 'pending';
+        const kickoffDate = new Date(company.kickoff_call_date);
+        kickoffDate.setHours(0, 0, 0, 0);
+        return kickoffDate <= today ? 'completed' : 'scheduled';
       case 'technical':
-        return company.technical_enablement_date ? 'completed' : 'pending';
+        if (!company.technical_enablement_date) return 'pending';
+        const techDate = new Date(company.technical_enablement_date);
+        techDate.setHours(0, 0, 0, 0);
+        return techDate <= today ? 'completed' : 'scheduled';
       case 'first_lead':
         return company.first_lead_registered ? 'completed' : 'pending';
       case 'first_closed':
@@ -73,8 +82,21 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
   const getCompletedStages = () => {
     if (!company) return 0;
     let completed = 0;
-    if (company.kickoff_call_date) completed++;
-    if (company.technical_enablement_date) completed++;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Only count as completed if the date has passed
+    if (company.kickoff_call_date) {
+      const kickoffDate = new Date(company.kickoff_call_date);
+      kickoffDate.setHours(0, 0, 0, 0);
+      if (kickoffDate <= today) completed++;
+    }
+    if (company.technical_enablement_date) {
+      const techDate = new Date(company.technical_enablement_date);
+      techDate.setHours(0, 0, 0, 0);
+      if (techDate <= today) completed++;
+    }
     if (company.first_lead_registered) completed++;
     if (company.first_closed_won) completed++;
     return completed;
@@ -142,12 +164,16 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
         <div className={`p-4 rounded-lg border-2 transition-all duration-300 ${
           getStageStatus('kickoff') === 'completed' 
             ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+            : getStageStatus('kickoff') === 'scheduled'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
             : 'border-border bg-card'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {getStageStatus('kickoff') === 'completed' ? (
                 <CheckCircle className="h-8 w-8 text-green-500" />
+              ) : getStageStatus('kickoff') === 'scheduled' ? (
+                <Calendar className="h-8 w-8 text-blue-500" />
               ) : (
                 <Circle className="h-8 w-8 text-muted-foreground" />
               )}
@@ -168,6 +194,9 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
               {getStageStatus('kickoff') === 'completed' && (
                 <Badge variant="default" className="mt-1">Completed</Badge>
               )}
+              {getStageStatus('kickoff') === 'scheduled' && (
+                <Badge variant="secondary" className="mt-1 bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Scheduled</Badge>
+              )}
             </div>
           </div>
         </div>
@@ -176,12 +205,16 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
         <div className={`p-4 rounded-lg border-2 transition-all duration-300 ${
           getStageStatus('technical') === 'completed' 
             ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+            : getStageStatus('technical') === 'scheduled'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
             : 'border-border bg-card'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {getStageStatus('technical') === 'completed' ? (
                 <CheckCircle className="h-8 w-8 text-green-500" />
+              ) : getStageStatus('technical') === 'scheduled' ? (
+                <Calendar className="h-8 w-8 text-blue-500" />
               ) : (
                 <Circle className="h-8 w-8 text-muted-foreground" />
               )}
@@ -201,6 +234,9 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
               </p>
               {getStageStatus('technical') === 'completed' && (
                 <Badge variant="default" className="mt-1">Completed</Badge>
+              )}
+              {getStageStatus('technical') === 'scheduled' && (
+                <Badge variant="secondary" className="mt-1 bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">Scheduled</Badge>
               )}
             </div>
           </div>
