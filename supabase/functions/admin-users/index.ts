@@ -55,22 +55,48 @@ serve(async (req) => {
       throw new Error('Access denied. Super admin required.');
     }
 
-    const url = new URL(req.url);
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+    
     const method = req.method;
 
     if (method === 'GET') {
+      console.log('Processing GET request for listing users');
       // List all users - no need to parse body for GET requests
       const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
       if (listError) throw listError;
 
+      console.log('Found users:', users.users.length);
       return new Response(JSON.stringify({ users: users.users }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else if (method === 'POST') {
-      // Parse JSON body only for POST requests
-      const requestBody = await req.json();
-      const { action, userId, updates } = requestBody;
-      if (action === 'get') {
+      console.log('Processing POST request');
+      
+      // Try to parse JSON body, but handle empty body case
+      let requestBody = {};
+      try {
+        const textBody = await req.text();
+        if (textBody && textBody.trim() !== '') {
+          requestBody = JSON.parse(textBody);
+        }
+      } catch (e) {
+        console.log('No JSON body provided, treating as list request');
+      }
+      
+      const { action, userId, updates } = requestBody as any;
+      
+      // Default action is to list users when no action specified
+      if (!action || action === 'list') {
+        console.log('Listing users via POST');
+        const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        if (listError) throw listError;
+
+        console.log('Found users:', users.users.length);
+        return new Response(JSON.stringify({ users: users.users }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'get') {
         if (!userId) throw new Error('User ID required');
         
         // Get specific user
