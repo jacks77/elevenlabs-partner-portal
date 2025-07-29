@@ -59,7 +59,7 @@ serve(async (req) => {
     const method = req.method;
 
     if (method === 'GET') {
-      // List all users
+      // List all users - no need to parse body for GET requests
       const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
       if (listError) throw listError;
 
@@ -67,6 +67,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else if (method === 'POST') {
+      // Parse JSON body only for POST requests
       const requestBody = await req.json();
       const { action, userId, updates } = requestBody;
       if (action === 'get') {
