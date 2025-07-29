@@ -47,6 +47,9 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [originalCompanyId, setOriginalCompanyId] = useState<string>('');
+  const [showCompanyChangeConfirm, setShowCompanyChangeConfirm] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
 
   const { register, handleSubmit, setValue, watch, reset } = useForm<FormData>();
 
@@ -54,11 +57,13 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
     if (open) {
       fetchCompanies();
       if (user) {
+        const userCompanyId = user.company?.id || 'none';
+        setOriginalCompanyId(userCompanyId);
         setValue('email', user.email);
         setValue('first_name', user.first_name || '');
         setValue('last_name', user.last_name || '');
         setValue('title', user.title || '');
-        setValue('company_id', user.company?.id || 'none');
+        setValue('company_id', userCompanyId);
       }
     }
   }, [open, user, setValue]);
@@ -77,6 +82,19 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
   };
 
   const onSubmit = async (data: FormData) => {
+    if (!user) return;
+    
+    // Check if company has changed
+    if (data.company_id !== originalCompanyId) {
+      setPendingFormData(data);
+      setShowCompanyChangeConfirm(true);
+      return;
+    }
+    
+    await submitForm(data);
+  };
+
+  const submitForm = async (data: FormData) => {
     if (!user) return;
     
     setLoading(true);
@@ -184,106 +202,136 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
   const selectedCompanyId = watch('company_id');
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Update user information and company assignment
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and company assignment
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register('email', { required: true })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="first_name">First Name</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="first_name"
-                {...register('first_name')}
+                id="email"
+                type="email"
+                {...register('email', { required: true })}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  {...register('first_name')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  {...register('last_name')}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="last_name">Last Name</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id="last_name"
-                {...register('last_name')}
+                id="title"
+                {...register('title')}
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              {...register('title')}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Select value={selectedCompanyId} onValueChange={(value) => setValue('company_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Company</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
-            <Select value={selectedCompanyId} onValueChange={(value) => setValue('company_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a company" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Company</SelectItem>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <DialogFooter className="flex justify-between">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete User
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this user? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={deleteUser}
+                      disabled={deleteLoading}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleteLoading ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
-          <DialogFooter className="flex justify-between">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button type="button" variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete User
+              <div className="flex space-x-2">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete User</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this user? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={deleteUser}
-                    disabled={deleteLoading}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {deleteLoading ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <div className="flex space-x-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Company Change Confirmation Dialog */}
+      <AlertDialog open={showCompanyChangeConfirm} onOpenChange={setShowCompanyChangeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Company Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to change this user's company assignment. This will affect their access and permissions. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingFormData(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (pendingFormData) {
+                  await submitForm(pendingFormData);
+                  setPendingFormData(null);
+                }
+                setShowCompanyChangeConfirm(false);
+              }}
+            >
+              Yes, Change Company
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
