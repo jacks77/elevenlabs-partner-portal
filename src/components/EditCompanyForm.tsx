@@ -56,26 +56,24 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
         .single();
 
       if (globalAdminsCompany) {
+        // First get company members
         const { data: members } = await supabase
           .from('company_members')
-          .select(`
-            user_id,
-            user_profiles!inner (
-              user_id,
-              first_name,
-              last_name
-            )
-          `)
+          .select('user_id')
           .eq('company_id', globalAdminsCompany.id)
           .eq('is_approved', true);
 
-        if (members) {
-          const managers = members.map(member => ({
-            user_id: member.user_id,
-            first_name: (member.user_profiles as any)?.first_name,
-            last_name: (member.user_profiles as any)?.last_name
-          }));
-          setPartnerManagers(managers);
+        if (members && members.length > 0) {
+          // Then get user profiles for those members
+          const userIds = members.map(m => m.user_id);
+          const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('user_id, first_name, last_name')
+            .in('user_id', userIds);
+
+          if (profiles) {
+            setPartnerManagers(profiles);
+          }
         }
       }
     } catch (error) {

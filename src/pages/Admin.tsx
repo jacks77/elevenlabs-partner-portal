@@ -31,6 +31,8 @@ interface Company {
   is_in_onboarding?: boolean;
   track?: string;
   lead_submission_url?: string;
+  partner_manager_id?: string;
+  slack_channel_url?: string;
 }
 
 interface NotificationBanner {
@@ -679,7 +681,9 @@ export default function Admin() {
           partner_salesforce_record: updatedData.partner_salesforce_record?.trim() || null,
           lead_submission_url: updatedData.lead_submission_url?.trim() || null,
           track: updatedData.track || null,
-          is_in_onboarding: updatedData.is_in_onboarding || false
+          is_in_onboarding: updatedData.is_in_onboarding || false,
+          partner_manager_id: updatedData.partner_manager_id,
+          slack_channel_url: updatedData.slack_channel_url?.trim() || null
         })
         .eq('id', editingCompany.id);
 

@@ -16,6 +16,7 @@ interface PartnerManager {
 interface CompanyWithPartnerManager {
   id: string;
   name: string;
+  track?: string;
   partner_manager_id?: string;
   slack_channel_url?: string;
   partner_manager?: PartnerManager;
@@ -44,6 +45,7 @@ export function ElevenLabsTeamWidget() {
         .select(`
           id,
           name,
+          track,
           partner_manager_id,
           slack_channel_url,
           partner_manager:user_profiles!companies_partner_manager_id_fkey (
@@ -148,6 +150,9 @@ export function ElevenLabsTeamWidget() {
         <Card key={company.id} className="w-full shadow-card">
           <CardHeader>
             <CardTitle>Your ElevenLabs Team</CardTitle>
+            {company.track && (
+              <p className="text-sm text-muted-foreground">Track: {company.track}</p>
+            )}
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
