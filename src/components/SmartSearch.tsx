@@ -173,7 +173,13 @@ export default function SmartSearch({
   };
 
   const trackSearch = async (term: string) => {
-    if (!user) return;
+    console.log('trackSearch called with term:', term);
+    console.log('user:', user);
+    
+    if (!user) {
+      console.log('No user found, skipping search tracking');
+      return;
+    }
 
     // Count results for this search
     const results = items.filter(item => 
@@ -182,14 +188,28 @@ export default function SmartSearch({
       item.tags.some(tag => tag.toLowerCase().includes(term.toLowerCase()))
     );
 
+    console.log('Search results count:', results.length);
+    console.log('Current filters:', filters);
+
     try {
-      await supabase
+      const insertData = {
+        search_term: term,
+        results_count: results.length,
+        category: filters.job_category || null
+      };
+      
+      console.log('Inserting search analytics:', insertData);
+      
+      const { data, error } = await supabase
         .from('search_analytics')
-        .insert({
-          search_term: term,
-          results_count: results.length,
-          category: filters.job_category
-        });
+        .insert(insertData);
+        
+      if (error) {
+        console.error('Search analytics error:', error);
+        throw error;
+      }
+      
+      console.log('Search analytics inserted successfully:', data);
     } catch (error) {
       console.error('Error tracking search:', error);
     }
