@@ -21,6 +21,7 @@ interface EditContentDialogProps {
   companies: Company[];
   onSuccess: () => void;
   item: ContentItem | null;
+  availableTags?: string[];
 }
 
 interface EditContent {
@@ -42,7 +43,7 @@ interface EditContent {
   youtube_id: string;
 }
 
-export default function EditContentDialog({ open, onOpenChange, companies, onSuccess, item }: EditContentDialogProps) {
+export default function EditContentDialog({ open, onOpenChange, companies, onSuccess, item, availableTags = [] }: EditContentDialogProps) {
   const [editContent, setEditContent] = useState<EditContent>({
     type: 'link',
     title: "",
@@ -64,6 +65,7 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
   
   const [newTag, setNewTag] = useState("");
   const [companySelectOpen, setCompanySelectOpen] = useState(false);
+  const [tagSelectOpen, setTagSelectOpen] = useState(false);
 
   // Initialize form with item data when dialog opens
   useEffect(() => {
@@ -155,12 +157,18 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
     }
   };
 
-  const addTag = () => {
-    if (newTag && !editContent.tags.includes(newTag)) {
+  const addTag = (tag: string) => {
+    if (tag && !editContent.tags.includes(tag)) {
       setEditContent(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag]
+        tags: [...prev.tags, tag]
       }));
+    }
+  };
+
+  const addNewTag = () => {
+    if (newTag && !editContent.tags.includes(newTag)) {
+      addTag(newTag);
       setNewTag("");
     }
   };
@@ -489,33 +497,93 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
           {/* Tags */}
           <div className="space-y-2">
             <Label>Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a tag"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addTag} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
+            
+            {/* Existing Tags Selection */}
+            {availableTags.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Select from existing tags:</Label>
+                <Popover open={tagSelectOpen} onOpenChange={setTagSelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={tagSelectOpen}
+                      className="w-full justify-between"
+                    >
+                      Select existing tags...
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search tags..." />
+                      <CommandList>
+                        <CommandEmpty>No tag found.</CommandEmpty>
+                        <CommandGroup>
+                          {availableTags
+                            .filter(tag => !editContent.tags.includes(tag))
+                            .map((tag) => (
+                            <CommandItem
+                              key={tag}
+                              value={tag}
+                              onSelect={() => {
+                                addTag(tag);
+                                setTagSelectOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  editContent.tags.includes(tag) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {tag}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* Add New Tag */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Or add a new tag:</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a new tag"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addNewTag();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addNewTag} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
+            
+            {/* Selected Tags */}
             {editContent.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {editContent.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {tag}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeTag(tag)}
-                    />
-                  </Badge>
-                ))}
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Selected tags:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {editContent.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -20,6 +20,7 @@ interface AddContentDialogProps {
   onOpenChange: (open: boolean) => void;
   companies: Company[];
   onSuccess: () => void;
+  availableTags?: string[];
 }
 
 interface NewContent {
@@ -41,7 +42,7 @@ interface NewContent {
   youtube_id: string;
 }
 
-export default function AddContentDialog({ open, onOpenChange, companies, onSuccess }: AddContentDialogProps) {
+export default function AddContentDialog({ open, onOpenChange, companies, onSuccess, availableTags = [] }: AddContentDialogProps) {
   const [newContent, setNewContent] = useState<NewContent>({
     type: 'link',
     title: "",
@@ -63,6 +64,7 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
   
   const [newTag, setNewTag] = useState("");
   const [companySelectOpen, setCompanySelectOpen] = useState(false);
+  const [tagSelectOpen, setTagSelectOpen] = useState(false);
 
   const resetForm = () => {
     setNewContent({
@@ -152,12 +154,18 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
     }
   };
 
-  const addTag = () => {
-    if (newTag && !newContent.tags.includes(newTag)) {
+  const addTag = (tag: string) => {
+    if (tag && !newContent.tags.includes(tag)) {
       setNewContent(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag]
+        tags: [...prev.tags, tag]
       }));
+    }
+  };
+
+  const addNewTag = () => {
+    if (newTag && !newContent.tags.includes(newTag)) {
+      addTag(newTag);
       setNewTag("");
     }
   };
@@ -467,45 +475,132 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
           {/* Tags */}
           <div className="space-y-2">
             <Label>Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a tag"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addTag} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
+            
+            {/* Existing Tags Selection */}
+            {availableTags.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Select from existing tags:</Label>
+                <Popover open={tagSelectOpen} onOpenChange={setTagSelectOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={tagSelectOpen}
+                      className="w-full justify-between"
+                    >
+                      Select existing tags...
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search tags..." />
+                      <CommandList>
+                        <CommandEmpty>No tag found.</CommandEmpty>
+                        <CommandGroup>
+                          {availableTags
+                            .filter(tag => !newContent.tags.includes(tag))
+                            .map((tag) => (
+                            <CommandItem
+                              key={tag}
+                              value={tag}
+                              onSelect={() => {
+                                addTag(tag);
+                                setTagSelectOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newContent.tags.includes(tag) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {tag}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* Add New Tag */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Or add a new tag:</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a new tag"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addNewTag();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addNewTag} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {newContent.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="text-xs hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+            
+            {/* Selected Tags */}
+            {newContent.tags.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Selected tags:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {newContent.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Regions */}
+          <div className="space-y-2">
+            <Label>Regions</Label>
+            <div className="flex flex-wrap gap-2">
+              {REGIONS.map((region) => (
+                <Badge
+                  key={region}
+                  variant={newContent.region.includes(region) ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => toggleArrayValue('region', region)}
+                >
+                  {region}
                 </Badge>
               ))}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
-              Add {newContent.type === 'link' ? 'Link' : 'Document'}
-            </Button>
+          {/* YouTube ID for links */}
+          {newContent.type === 'link' && (
+            <div className="space-y-2">
+              <Label>YouTube ID (Optional)</Label>
+              <Input
+                placeholder="For YouTube videos, leave empty for auto-detection"
+                value={newContent.youtube_id}
+                onChange={(e) => setNewContent(prev => ({ ...prev, youtube_id: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
+            </Button>
+            <Button type="submit">
+              Add {newContent.type === 'link' ? 'Link' : 'Document'}
             </Button>
           </div>
         </form>

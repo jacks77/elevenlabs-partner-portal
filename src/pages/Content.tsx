@@ -526,6 +526,7 @@ export default function ContentHub() {
           onOpenChange={setIsAddDialogOpen}
           companies={companies}
           onSuccess={fetchItems}
+          availableTags={allTags}
         />
       )}
 
@@ -537,6 +538,7 @@ export default function ContentHub() {
           companies={companies}
           onSuccess={fetchItems}
           item={editingItem}
+          availableTags={allTags}
         />
       )}
     </div>
