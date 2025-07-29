@@ -18,6 +18,11 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/UserManagement';
 import { EditCompanyForm } from '@/components/EditCompanyForm';
+import { EditUserForm } from '@/components/EditUserForm';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Calendar, MousePointer, Eye, Shield, RefreshCw, Mail, AlertTriangle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Company {
   id: string;
@@ -82,6 +87,454 @@ export default function Admin() {
   const [editingStory, setEditingStory] = useState<string | null>(null);
 
   const isSuperAdmin = profile?.is_super_admin;
+
+  // Analytics component inline
+  const AnalyticsContent = () => {
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [totalPageViews, setTotalPageViews] = useState(0);
+    const [totalLinkClicks, setTotalLinkClicks] = useState(0);
+    const [uniqueUsers, setUniqueUsers] = useState(0);
+    const [topPages, setTopPages] = useState<any[]>([]);
+    const [dailyStats, setDailyStats] = useState<any[]>([]);
+
+    const fetchAnalytics = async () => {
+      try {
+        // Fetch total page views
+        const { count: pageViewCount } = await supabase
+          .from('analytics_page_views')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch total link clicks
+        const { count: linkClickCount } = await supabase
+          .from('analytics_link_clicks')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch unique users from page views
+        const { data: uniqueUserData } = await supabase
+          .from('analytics_page_views')
+          .select('user_id')
+          .not('user_id', 'is', null);
+
+        const uniqueUserIds = new Set(uniqueUserData?.map(item => item.user_id) || []);
+
+        // Fetch top pages
+        const { data: pageViewData } = await supabase
+          .from('analytics_page_views')
+          .select('page')
+          .not('page', 'is', null);
+
+        const pageCounts = pageViewData?.reduce((acc, item) => {
+          acc[item.page] = (acc[item.page] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {};
+
+        const topPagesData = Object.entries(pageCounts)
+          .map(([page, views]) => ({ page, views }))
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 5);
+
+        // Fetch daily stats for the last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data: pageViewsByDay } = await supabase
+          .from('analytics_page_views')
+          .select('created_at')
+          .gte('created_at', sevenDaysAgo.toISOString());
+
+        const { data: linkClicksByDay } = await supabase
+          .from('analytics_link_clicks')
+          .select('created_at')
+          .gte('created_at', sevenDaysAgo.toISOString());
+
+        // Process daily stats
+        const dailyData: Record<string, { page_views: number; link_clicks: number }> = {};
+        
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          dailyData[dateStr] = { page_views: 0, link_clicks: 0 };
+        }
+
+        pageViewsByDay?.forEach(item => {
+          const date = item.created_at.split('T')[0];
+          if (dailyData[date]) {
+            dailyData[date].page_views++;
+          }
+        });
+
+        linkClicksByDay?.forEach(item => {
+          const date = item.created_at.split('T')[0];
+          if (dailyData[date]) {
+            dailyData[date].link_clicks++;
+          }
+        });
+
+        const dailyStatsData = Object.entries(dailyData).map(([date, stats]) => ({
+          date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+          ...stats
+        }));
+
+        setTotalPageViews(pageViewCount || 0);
+        setTotalLinkClicks(linkClickCount || 0);
+        setUniqueUsers(uniqueUserIds.size);
+        setTopPages(topPagesData);
+        setDailyStats(dailyStatsData);
+
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load analytics data",
+          variant: "destructive",
+        });
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      fetchAnalytics();
+    }, []);
+
+    if (analyticsLoading) {
+      return (
+        <div className="text-center">Loading analytics...</div>
+      );
+    }
+
+    const chartConfig = {
+      page_views: {
+        label: "Page Views",
+        color: "hsl(var(--primary))",
+      },
+      link_clicks: {
+        label: "Link Clicks", 
+        color: "hsl(var(--secondary))",
+      },
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Stats Overview */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Page Views</CardTitle>
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalPageViews}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Link Clicks</CardTitle>
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalLinkClicks}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{uniqueUsers}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg. Views/User</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {uniqueUsers > 0 ? Math.round(totalPageViews / uniqueUsers) : 0}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Daily Activity Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Activity (Last 7 Days)</CardTitle>
+              <CardDescription>Page views and link clicks over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={dailyStats}>
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="page_views" 
+                      stroke="var(--color-page_views)" 
+                      strokeWidth={2}
+                      name="Page Views"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="link_clicks" 
+                      stroke="var(--color-link_clicks)" 
+                      strokeWidth={2}
+                      name="Link Clicks"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Top Pages */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Most Visited Pages</CardTitle>
+              <CardDescription>Pages with the highest traffic</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topPages} layout="horizontal">
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="page" width={100} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="views" fill="var(--color-page_views)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {topPages.length === 0 && totalPageViews === 0 && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No analytics data yet</h3>
+              <p className="text-muted-foreground">
+                Start using the platform to see analytics data appear here.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  // Settings component inline
+  const SettingsContent = () => {
+    const [bootstrapLoading, setBootstrapLoading] = useState(false);
+    const [bootstrapResult, setBootstrapResult] = useState<any>(null);
+
+    const runBootstrap = async () => {
+      setBootstrapLoading(true);
+      setBootstrapResult(null);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('bootstrap-super-admin');
+
+        if (error) {
+          throw error;
+        }
+
+        setBootstrapResult(data);
+        
+        toast({
+          title: "Bootstrap completed",
+          description: data.message || "Super admin setup completed successfully."
+        });
+
+      } catch (error: any) {
+        console.error('Bootstrap error:', error);
+        toast({
+          variant: "destructive",
+          title: "Bootstrap failed",
+          description: error.message || "Failed to bootstrap super admin."
+        });
+      } finally {
+        setBootstrapLoading(false);
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Bootstrap Section */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Super Admin Bootstrap
+            </CardTitle>
+            <CardDescription>
+              Initialize or verify the super admin account setup
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                This function sets up the initial super admin account using environment variables.
+                It's safe to run multiple times - it will only create the account if it doesn't exist.
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex items-center space-x-4">
+              <Button 
+                onClick={runBootstrap}
+                disabled={bootstrapLoading}
+                variant="default"
+              >
+                {bootstrapLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Running Bootstrap...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Run Bootstrap
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {bootstrapResult && (
+              <Alert className="mt-4">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p><strong>Status:</strong> {bootstrapResult.success ? 'Success' : 'Failed'}</p>
+                    <p><strong>Message:</strong> {bootstrapResult.message}</p>
+                    {bootstrapResult.adminEmail && (
+                      <p><strong>Admin Email:</strong> {bootstrapResult.adminEmail}</p>
+                    )}
+                    {bootstrapResult.reminder && (
+                      <p className="text-warning"><strong>Important:</strong> {bootstrapResult.reminder}</p>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Environment Info */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Environment Configuration</CardTitle>
+            <CardDescription>
+              Current system configuration status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Required Secrets</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>ADMIN_EMAIL</span>
+                      <Badge variant="outline">Required</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>ADMIN_PASSWORD</span>
+                      <Badge variant="outline">Required</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>RESEND_API_KEY</span>
+                      <Badge variant="outline">Required</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>APP_URL</span>
+                      <Badge variant="outline">Required</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium">System Status</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>Database</span>
+                      <Badge variant="default">Connected</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Authentication</span>
+                      <Badge variant="default">Active</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Edge Functions</span>
+                      <Badge variant="default">Deployed</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Instructions */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Setup Instructions</CardTitle>
+            <CardDescription>
+              Steps to complete the partner portal setup
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">1. Configure Secrets</h4>
+                <p className="text-sm text-muted-foreground">
+                  Make sure all required environment variables are set in Supabase Edge Functions secrets.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">2. Run Bootstrap</h4>
+                <p className="text-sm text-muted-foreground">
+                  Click the "Run Bootstrap" button above to create the initial super admin account.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">3. Change Default Password</h4>
+                <p className="text-sm text-muted-foreground">
+                  After bootstrapping, sign in with the admin account and immediately change the password.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">4. Test Registration Flow</h4>
+                <p className="text-sm text-muted-foreground">
+                  Create a test registration to verify the approval and invitation workflow.
+                </p>
+              </div>
+
+              <Alert>
+                <Mail className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Email Configuration:</strong> Make sure to validate your sending domain in Resend 
+                  and update the "from" address in the email functions to use your verified domain.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   useEffect(() => {
     fetchData();
@@ -502,12 +955,14 @@ export default function Admin() {
 
           {/* Admin Tabs */}
           <Tabs defaultValue="approvals" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="approvals">Approvals</TabsTrigger>
               <TabsTrigger value="companies">Companies</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="news">News</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -826,6 +1281,32 @@ export default function Admin() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
+                <p className="text-muted-foreground mt-2">
+                  Track user engagement and platform usage
+                </p>
+              </div>
+
+              {/* Include Analytics Component */}
+              <AnalyticsContent />
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="space-y-6">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold">System Settings</h2>
+                <p className="text-muted-foreground mt-2">
+                  Configure system-wide settings and manage admin accounts
+                </p>
+              </div>
+
+              {/* Include Settings Component */}
+              <SettingsContent />
             </TabsContent>
 
             {/* News Tab */}

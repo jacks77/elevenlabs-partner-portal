@@ -8,17 +8,24 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Search, Trash2 } from 'lucide-react';
+import { UserPlus, Search, Trash2, Edit } from 'lucide-react';
+import { EditUserForm } from './EditUserForm';
 import { Link } from 'react-router-dom';
 
 interface User {
   id: string;
   email: string;
+  full_name?: string;
+  title?: string;
   created_at: string;
   is_super_admin?: boolean;
   company_id?: string;
   company_name?: string;
   is_admin?: boolean;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface Company {
@@ -35,6 +42,8 @@ export function UserManagement() {
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const isSuperAdmin = profile?.is_super_admin;
 
@@ -312,6 +321,19 @@ export function UserManagement() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingUser({
+                        ...user,
+                        company: user.company_name ? { id: user.company_id || '', name: user.company_name } : undefined
+                      });
+                      setEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -358,6 +380,17 @@ export function UserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      <EditUserForm
+        user={editingUser}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUserUpdated={() => {
+          fetchUsers();
+          setEditingUser(null);
+        }}
+      />
     </div>
   );
 }
