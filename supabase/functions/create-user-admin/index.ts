@@ -103,12 +103,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is super admin using the secure function
-    const { data: isSuperAdmin, error: checkError } = await supabase
-      .rpc('is_super_admin');
+    // Check if user is super admin by querying the user_profiles table directly
+    const { data: profileData, error: checkError } = await supabase
+      .from('user_profiles')
+      .select('is_super_admin')
+      .eq('user_id', user.id)
+      .single();
 
-    if (checkError || !isSuperAdmin) {
-      console.error('Profile error or not super admin:', { checkError, isSuperAdmin });
+    if (checkError || !profileData?.is_super_admin) {
+      console.error('Profile error or not super admin:', { checkError, isSuperAdmin: profileData?.is_super_admin });
       
       // Log security event
       await supabase
