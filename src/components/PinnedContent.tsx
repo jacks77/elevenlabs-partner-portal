@@ -194,8 +194,8 @@ export default function PinnedContent({ className }: PinnedContentProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {pinnedItems.slice(0, 5).map((item) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {pinnedItems.slice(0, 6).map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -209,7 +209,7 @@ export default function PinnedContent({ className }: PinnedContentProps) {
                 
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm truncate">{item.title}</h4>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1 mt-1">
                     {item.job_category && (
                       <Badge variant="outline" className="text-xs">
                         {item.job_category}
@@ -224,7 +224,7 @@ export default function PinnedContent({ className }: PinnedContentProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 ml-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -245,9 +245,9 @@ export default function PinnedContent({ className }: PinnedContentProps) {
             </div>
           ))}
           
-          {pinnedItems.length > 5 && (
-            <div className="text-center text-sm text-muted-foreground pt-2">
-              +{pinnedItems.length - 5} more pinned items
+          {pinnedItems.length > 6 && (
+            <div className="col-span-full text-center text-sm text-muted-foreground pt-2">
+              +{pinnedItems.length - 6} more pinned items
             </div>
           )}
         </div>
