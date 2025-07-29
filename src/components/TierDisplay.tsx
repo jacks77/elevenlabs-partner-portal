@@ -92,7 +92,7 @@ export function TierDisplay({ track, commissionTier, certificationTier }: TierDi
       <div className="space-y-2">
         <h4 className="font-medium text-sm text-muted-foreground">Commission Tier</h4>
         <div className="flex items-center gap-2">
-          <Badge className={`flex items-center gap-1 ${getTierColor(commissionTier)}`}>
+          <Badge className={`flex items-center gap-1 pointer-events-none ${getTierColor(commissionTier)}`}>
             {getTierIcon(commissionTier)}
             {commissionTier}
           </Badge>
@@ -112,7 +112,7 @@ export function TierDisplay({ track, commissionTier, certificationTier }: TierDi
         <div className="space-y-2">
           <h4 className="font-medium text-sm text-muted-foreground">Commission Tier</h4>
           <div className="flex items-center gap-2">
-            <Badge className={`flex items-center gap-1 ${getTierColor(commissionTier)}`}>
+            <Badge className={`flex items-center gap-1 pointer-events-none ${getTierColor(commissionTier)}`}>
               {getTierIcon(commissionTier)}
               {commissionTier}
             </Badge>
@@ -123,7 +123,7 @@ export function TierDisplay({ track, commissionTier, certificationTier }: TierDi
         </div>
         <div className="space-y-2">
           <h4 className="font-medium text-sm text-muted-foreground">Certification Tier</h4>
-          <Badge className={`flex items-center gap-1 ${getTierColor(certificationTier)}`}>
+          <Badge className={`flex items-center gap-1 pointer-events-none ${getTierColor(certificationTier)}`}>
             {getTierIcon(certificationTier)}
             {certificationTier}
           </Badge>
@@ -137,7 +137,7 @@ export function TierDisplay({ track, commissionTier, certificationTier }: TierDi
     return (
       <div className="space-y-2">
         <h4 className="font-medium text-sm text-muted-foreground">Certification Tier</h4>
-        <Badge className={`flex items-center gap-1 ${getTierColor(certificationTier)}`}>
+        <Badge className={`flex items-center gap-1 pointer-events-none ${getTierColor(certificationTier)}`}>
           {getTierIcon(certificationTier)}
           {certificationTier}
         </Badge>
