@@ -6,6 +6,9 @@ import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
 interface UserProfile {
   user_id: string;
   is_super_admin: boolean;
+  first_name?: string;
+  last_name?: string;
+  title?: string;
   created_at?: string;
   has_changed_default_password?: boolean;
 }

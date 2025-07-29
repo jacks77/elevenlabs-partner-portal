@@ -13,7 +13,8 @@ import { Trash2 } from 'lucide-react';
 interface User {
   id: string;
   email: string;
-  full_name?: string;
+  first_name?: string;
+  last_name?: string;
   title?: string;
   company?: {
     id: string;
@@ -35,7 +36,8 @@ interface EditUserFormProps {
 
 interface FormData {
   email: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   title: string;
   company_id: string;
 }
@@ -53,7 +55,8 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
       fetchCompanies();
       if (user) {
         setValue('email', user.email);
-        setValue('full_name', user.full_name || '');
+        setValue('first_name', user.first_name || '');
+        setValue('last_name', user.last_name || '');
         setValue('title', user.title || '');
         setValue('company_id', user.company?.id || 'none');
       }
@@ -80,7 +83,8 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
     try {
       // Update user profile
       const updates: any = {
-        full_name: data.full_name || null,
+        first_name: data.first_name || null,
+        last_name: data.last_name || null,
         title: data.title || null,
       };
 
@@ -199,12 +203,21 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name</Label>
-            <Input
-              id="full_name"
-              {...register('full_name')}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="first_name">First Name</Label>
+              <Input
+                id="first_name"
+                {...register('first_name')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name">Last Name</Label>
+              <Input
+                id="last_name"
+                {...register('last_name')}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -15,7 +15,8 @@ import { Link } from 'react-router-dom';
 interface User {
   id: string;
   email: string;
-  full_name?: string;
+  first_name?: string;
+  last_name?: string;
   title?: string;
   created_at: string;
   is_super_admin?: boolean;
