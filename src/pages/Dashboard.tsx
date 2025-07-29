@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send, X } from 'lucide-react';
 import OnboardingJourney from '@/components/OnboardingJourney';
 import { ElevenLabsTeamWidget } from '@/components/ElevenLabsTeamWidget';
+import { SocialFooter } from '@/components/SocialFooter';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
@@ -158,41 +159,8 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          {/* Social Media Feeds */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* X (Twitter) Feed */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                  Latest from @elevenlabsio
-                </CardTitle>
-                <CardDescription>Recent updates from our X feed</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div 
-                  id="twitter-feed"
-                  className="h-96 overflow-hidden"
-                  dangerouslySetInnerHTML={{
-                    __html: `
-                      <a 
-                        class="twitter-timeline" 
-                        data-height="400" 
-                        data-theme="light" 
-                        data-chrome="noheader nofooter noborders"
-                        href="https://twitter.com/elevenlabsio?ref_src=twsrc%5Etfw"
-                      >
-                        Tweets by elevenlabsio
-                      </a>
-                    `
-                  }}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Recent Updates */}
+          {/* Recent Updates - Full Width */}
+          <div className="w-full">{/* Recent Updates */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Recent Updates</CardTitle>
