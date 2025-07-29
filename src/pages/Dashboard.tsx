@@ -122,69 +122,34 @@ export default function Dashboard() {
           ))}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link to="/documents">
-            <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-              <CardHeader className="text-center">
-                <FileText className="h-8 w-8 mx-auto text-primary" />
-                <CardTitle className="text-lg">Documents</CardTitle>
-                <CardDescription>Access shared documents and resources</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link to="/content">
+              <Card className="hover:shadow-elegant transition-shadow cursor-pointer h-full">
+                <CardHeader className="text-center h-full flex flex-col justify-center">
+                  <FileText className="h-8 w-8 mx-auto text-primary" />
+                  <CardTitle className="text-lg">Content</CardTitle>
+                  <CardDescription>Manage content and resources</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <Link to="/links">
-            <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-              <CardHeader className="text-center">
-                <LinkIcon className="h-8 w-8 mx-auto text-primary" />
-                <CardTitle className="text-lg">Links</CardTitle>
-                <CardDescription>Important links and references</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+            <Link to="/lead-submission">
+              <Card className="hover:shadow-elegant transition-shadow cursor-pointer h-full">
+                <CardHeader className="text-center h-full flex flex-col justify-center">
+                  <Send className="h-8 w-8 mx-auto text-primary" />
+                  <CardTitle className="text-lg">Lead Submission</CardTitle>
+                  <CardDescription>Submit and track leads</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          {/* All registered users can invite */}
-          <Link to="/invite-user">
-            <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-              <CardHeader className="text-center">
-                <Send className="h-8 w-8 mx-auto text-primary" />
-                <CardTitle className="text-lg">Invite User</CardTitle>
-                <CardDescription>Invite new users to your company</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-
-            {isAdmin && (
+            {isSuperAdmin && (
               <Link to="/admin">
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-                  <CardHeader className="text-center">
+                <Card className="hover:shadow-elegant transition-shadow cursor-pointer h-full">
+                  <CardHeader className="text-center h-full flex flex-col justify-center">
                     <Users className="h-8 w-8 mx-auto text-primary" />
                     <CardTitle className="text-lg">Admin</CardTitle>
-                    <CardDescription>Manage members and approvals</CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-            )}
-
-            {isSuperAdmin && (
-              <Link to="/analytics">
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-                  <CardHeader className="text-center">
-                    <BarChart3 className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Analytics</CardTitle>
-                    <CardDescription>View usage analytics</CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-            )}
-
-            {isSuperAdmin && (
-              <Link to="/settings">
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer">
-                  <CardHeader className="text-center">
-                    <Settings className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Settings</CardTitle>
-                    <CardDescription>System configuration</CardDescription>
+                    <CardDescription>Manage system and users</CardDescription>
                   </CardHeader>
                 </Card>
               </Link>
