@@ -74,33 +74,33 @@ export default function LeadSubmission() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 text-center">
-        <h1 className="text-3xl font-bold mb-2">Lead Submission</h1>
-        <p className="text-muted-foreground">
-          Submit your leads through our partner portal
-        </p>
-        <div className="mt-4">
-          <a
-            href={leadSubmissionUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-primary hover:underline"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Open in new window
-          </a>
+    <div className="fixed inset-0 z-50">
+      {/* Navigation overlay */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold">Lead Submission</h1>
+            <a
+              href={leadSubmissionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open in new window
+            </a>
+          </div>
         </div>
       </div>
-
-      <div className="w-full">
-        <iframe
-          src={leadSubmissionUrl}
-          className="w-full h-[800px] border rounded-lg shadow-lg"
-          title="Lead Submission Form"
-          frameBorder="0"
-        />
-      </div>
+      
+      {/* Full-screen iframe with top margin for nav */}
+      <iframe
+        src={leadSubmissionUrl}
+        className="w-full h-full pt-16"
+        title="Lead Submission Form"
+        frameBorder="0"
+        style={{ marginTop: '60px', height: 'calc(100vh - 60px)' }}
+      />
     </div>
   );
 }
