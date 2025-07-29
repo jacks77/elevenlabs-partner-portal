@@ -108,23 +108,9 @@ export function CompanyManagement() {
 
   const createCompany = async () => {
     try {
-      // Map display track values to database values
-      const trackMapping: Record<string, string> = {
-        "Track 1: Referral/Reseller": "Track 1",
-        "Track 2: Solutions Partner": "Track 2", 
-        "Track 3: GSI": "Track 3"
-      };
-
-      const companyData = {
-        ...newCompany,
-        track: newCompany.track ? trackMapping[newCompany.track] || newCompany.track : null
-      };
-
-      console.log('Creating company with data:', companyData);
-
       const { data, error } = await supabase
         .from('companies')
-        .insert([companyData])
+        .insert([newCompany])
         .select()
         .single();
 
@@ -287,16 +273,16 @@ export function CompanyManagement() {
                       <SelectValue placeholder="Select track" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Track 1: Referral/Reseller">Track 1: Referral/Reseller</SelectItem>
-                      <SelectItem value="Track 2: Solutions Partner">Track 2: Solutions Partner</SelectItem>
-                      <SelectItem value="Track 3: GSI">Track 3: GSI</SelectItem>
+                      <SelectItem value="Track 1">Track 1</SelectItem>
+                      <SelectItem value="Track 2">Track 2</SelectItem>
+                      <SelectItem value="Track 3">Track 3</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Show Commission Tier if Track 1 or 2 is selected */}
-                  {(newCompany.track === "Track 1: Referral/Reseller" || newCompany.track === "Track 2: Solutions Partner") && (
+                  {(newCompany.track === "Track 1" || newCompany.track === "Track 2") && (
                     <div>
                       <Label htmlFor="commission-tier">Commission Tier</Label>
                       <Select
@@ -318,7 +304,7 @@ export function CompanyManagement() {
                   )}
                   
                   {/* Show Certification Tier if Track 2 or 3 is selected */}
-                  {(newCompany.track === "Track 2: Solutions Partner" || newCompany.track === "Track 3: GSI") && (
+                  {(newCompany.track === "Track 2" || newCompany.track === "Track 3") && (
                     <div>
                       <Label htmlFor="certification-tier">Certification Tier</Label>
                       <Select
