@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Newspaper, Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -249,97 +250,78 @@ export function NewsManagement() {
         </Dialog>
       </div>
 
-      <div className="grid gap-6">
-        {newsStories.map((story) => (
-          <Card key={story.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CardTitle className="flex items-center gap-2">
-                      <Newspaper className="h-5 w-5" />
-                      {story.headline}
-                    </CardTitle>
-                    <Badge variant={story.is_published ? "default" : "secondary"}>
-                      {story.is_published ? "Published" : "Draft"}
-                    </Badge>
-                  </div>
-                  {story.subheading && (
-                    <CardDescription>{story.subheading}</CardDescription>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => togglePublishStatus(story)}
-                  >
-                    {story.is_published ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedStory(story);
-                      setEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteStory(story.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              {story.image_url && (
-                <div className="mb-4">
-                  <img 
-                    src={story.image_url} 
-                    alt={story.headline}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-              
-              {story.content && (
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                  {story.content}
-                </p>
-              )}
-              
-              <div className="text-xs text-muted-foreground">
-                Created: {new Date(story.created_at).toLocaleDateString()} • 
-                Updated: {new Date(story.updated_at).toLocaleDateString()}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      
-      {newsStories.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Newspaper className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No news stories found</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Create your first news story to get started.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="p-0">
+          {newsStories.length === 0 ? (
+            <div className="text-center py-8">
+              <Newspaper className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No news stories found</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Create your first news story to get started.
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Article Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {newsStories.map((story) => (
+                  <TableRow key={story.id}>
+                    <TableCell className="font-medium">{story.headline}</TableCell>
+                    <TableCell>
+                      <Badge variant={story.is_published ? "default" : "secondary"}>
+                        {story.is_published ? "Published" : "Draft"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(story.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(story.updated_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => togglePublishStatus(story)}
+                        >
+                          {story.is_published ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedStory(story);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteStory(story.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
