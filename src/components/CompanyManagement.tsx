@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, Plus, Edit, Users, Route, ExternalLink } from "lucide-react";
+import { Building2, Plus, Edit, Users, Route, ExternalLink, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -41,6 +41,7 @@ interface Company {
 export function CompanyManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -185,6 +186,31 @@ export function CompanyManagement() {
     }
   };
 
+  // Filter companies based on search term
+  const filteredCompanies = companies.filter(company =>
+    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.track?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.partner_manager?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.partner_manager?.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Group companies by track
+  const companiesByTrack = filteredCompanies.reduce((acc, company) => {
+    const track = company.track || 'Unassigned';
+    if (!acc[track]) {
+      acc[track] = [];
+    }
+    acc[track].push(company);
+    return acc;
+  }, {} as Record<string, Company[]>);
+
+  // Sort tracks to show them in a consistent order
+  const sortedTracks = Object.keys(companiesByTrack).sort((a, b) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
+  });
+
   if (loading) {
     return (
       <Card>
@@ -313,98 +339,125 @@ export function CompanyManagement() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {companies.map((company) => (
-          <Card key={company.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    {company.name}
-                  </CardTitle>
-                  {company.track && (
-                    <Badge variant="outline" className="mt-1">
-                      {company.track}
-                    </Badge>
-                  )}
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditClick(company)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  Members
-                </span>
-                <span className="font-medium">{company.member_count}</span>
-              </div>
-              
-              <div className="flex flex-wrap gap-1">
-                <Badge className={getTierColor(company.commission_tier || 'Registered')}>
-                  {company.commission_tier || 'Registered'} Commission
-                </Badge>
-                <Badge className={getTierColor(company.certification_tier || 'Registered')}>
-                  {company.certification_tier || 'Registered'} Cert
-                </Badge>
-              </div>
-              
-              {company.is_in_onboarding && (
-                <Badge variant="secondary" className="w-fit">
-                  In Onboarding
-                </Badge>
-              )}
-              
-              {company.partner_manager && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Partner Manager: </span>
-                  <span className="font-medium">
-                    {company.partner_manager.first_name} {company.partner_manager.last_name}
-                  </span>
-                </div>
-              )}
-              
-              {company.lead_submission_url && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="w-full"
-                >
-                  <a href={company.lead_submission_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-2" />
-                    Lead Submission
-                  </a>
-                </Button>
-              )}
-              
-              <div className="text-xs text-muted-foreground">
-                Created {new Date(company.created_at).toLocaleDateString()}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Search companies, tracks, or partner managers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
-      
-      {companies.length === 0 && (
+
+      {/* Companies Grouped by Track */}
+      {sortedTracks.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No companies found</p>
+            <p className="text-muted-foreground">
+              {searchTerm ? "No companies match your search" : "No companies found"}
+            </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Create your first company to get started.
+              {searchTerm ? "Try a different search term" : "Create your first company to get started."}
             </p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-8">
+          {sortedTracks.map((track) => (
+            <div key={track} className="space-y-4">
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl font-semibold">{track}</h3>
+                <Badge variant="secondary" className="text-sm">
+                  {companiesByTrack[track].length} companies
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {companiesByTrack[track].map((company) => (
+                  <Card key={company.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5" />
+                            {company.name}
+                          </CardTitle>
+                          {company.track && (
+                            <Badge variant="outline" className="mt-1">
+                              {company.track}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(company)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Members
+                        </span>
+                        <span className="font-medium">{company.member_count}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1">
+                        <Badge className={getTierColor(company.commission_tier || 'Registered')}>
+                          {company.commission_tier || 'Registered'} Commission
+                        </Badge>
+                        <Badge className={getTierColor(company.certification_tier || 'Registered')}>
+                          {company.certification_tier || 'Registered'} Cert
+                        </Badge>
+                      </div>
+                      
+                      {company.is_in_onboarding && (
+                        <Badge variant="secondary" className="w-fit">
+                          In Onboarding
+                        </Badge>
+                      )}
+                      
+                      {company.partner_manager && (
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Partner Manager: </span>
+                          <span className="font-medium">
+                            {company.partner_manager.first_name} {company.partner_manager.last_name}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {company.lead_submission_url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="w-full"
+                        >
+                          <a href={company.lead_submission_url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3 mr-2" />
+                            Lead Submission
+                          </a>
+                        </Button>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground">
+                        Created {new Date(company.created_at).toLocaleDateString()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Edit Company Dialog */}
