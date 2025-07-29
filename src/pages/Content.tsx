@@ -1,92 +1,72 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, FileText, ExternalLink, Star, HelpCircle, MessageSquare, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Search, X, ExternalLink, FileText, Link } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { ContentItem, Company, PartnerManager, PinnedContent as PinnedContentType } from "@/types/content";
+import SmartSearch, { SearchFilters } from "@/components/SmartSearch";
+import ContentCard from "@/components/ContentCard";
+import ContentFilters from "@/components/ContentFilters";
+import AddContentDialog from "@/components/AddContentDialog";
 
-interface ContentItem {
-  id: string;
-  title: string;
-  url?: string;
-  drive_url?: string;
-  company_id?: string;
-  tags: string[];
-  created_at: string;
-  type: 'link' | 'document';
-}
-
-interface Company {
-  id: string;
-  name: string;
-}
-
-export default function Content() {
+export default function ContentHub() {
   const [items, setItems] = useState<ContentItem[]>([]);
+  const [filteredItems, setFilteredItems] = useState<ContentItem[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [partnerManager, setPartnerManager] = useState<PartnerManager | null>(null);
+  const [pinnedContentIds, setPinnedContentIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<SearchFilters>({});
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
-  const [filteredItems, setFilteredItems] = useState<ContentItem[]>([]);
-
-  const [newItem, setNewItem] = useState({
-    type: 'link' as 'link' | 'document',
-    title: "",
-    url: "",
-    company_id: "",
-    tags: [] as string[]
-  });
-  const [newTag, setNewTag] = useState("");
-  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
   const { user, profile, memberships } = useAuth();
   const { trackLinkClick } = useAnalytics();
 
   const canManageContent = profile?.is_super_admin || memberships?.some(m => m.is_admin && m.is_approved);
+  const userCompany = memberships?.find(m => m.is_approved);
 
   useEffect(() => {
-    fetchItems();
-    fetchCompanies();
+    fetchData();
   }, []);
 
   useEffect(() => {
-    let filtered = items;
-
-    if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+    if (user) {
+      fetchPinnedContent();
+      fetchPartnerManager();
     }
+  }, [user, userCompany]);
 
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(item =>
-        selectedTags.every(tag => item.tags.includes(tag))
-      );
+  useEffect(() => {
+    filterContent();
+  }, [items, searchTerm, filters, selectedTags, activeTab]);
+
+  const fetchData = async () => {
+    try {
+      await Promise.all([
+        fetchItems(),
+        fetchCompanies()
+      ]);
+    } finally {
+      setLoading(false);
     }
-
-    setFilteredItems(filtered);
-  }, [items, searchTerm, selectedTags]);
+  };
 
   const fetchItems = async () => {
     try {
       // Fetch links
       const { data: linksData, error: linksError } = await supabase
         .from("links")
-        .select("id, title, url, company_id, tags, created_at")
+        .select("*")
+        .neq('status', 'draft') // Hide draft content from non-admins
         .order("created_at", { ascending: false });
 
       if (linksError) throw linksError;
@@ -94,7 +74,8 @@ export default function Content() {
       // Fetch documents  
       const { data: documentsData, error: documentsError } = await supabase
         .from("documents")
-        .select("id, title, drive_url, company_id, tags, created_at")
+        .select("*")
+        .neq('status', 'draft') // Hide draft content from non-admins
         .order("created_at", { ascending: false });
 
       if (documentsError) throw documentsError;
@@ -103,14 +84,19 @@ export default function Content() {
       const combinedItems: ContentItem[] = [
         ...(linksData || []).map(item => ({ ...item, type: 'link' as const })),
         ...(documentsData || []).map(item => ({ ...item, url: item.drive_url, type: 'document' as const }))
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      ].sort((a, b) => {
+        // Featured content first, then by date
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
       setItems(combinedItems);
 
       // Extract unique tags
       const tags = new Set<string>();
-      combinedItems.forEach(item => item.tags.forEach(tag => tags.add(tag)));
-      setAllTags(Array.from(tags));
+      combinedItems.forEach(item => item.tags?.forEach(tag => tags.add(tag)));
+      setAllTags(Array.from(tags).sort());
     } catch (error) {
       console.error("Error fetching content:", error);
       toast({
@@ -118,8 +104,6 @@ export default function Content() {
         title: "Error",
         description: "Failed to load content"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -127,7 +111,7 @@ export default function Content() {
     try {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name")
+        .select("id, name, partner_manager_id")
         .order("name");
 
       if (error) throw error;
@@ -137,45 +121,180 @@ export default function Content() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newItem.title || !newItem.url) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please fill in all required fields"
-      });
-      return;
-    }
+  const fetchPinnedContent = async () => {
+    if (!user) return;
 
     try {
-      const itemData = {
-        title: newItem.title,
-        [newItem.type === 'link' ? 'url' : 'drive_url']: newItem.url,
-        company_id: newItem.company_id || null,
-        tags: newItem.tags
+      const { data, error } = await supabase
+        .from('pinned_content')
+        .select('content_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const pinnedIds = new Set(data?.map(p => p.content_id) || []);
+      setPinnedContentIds(pinnedIds);
+    } catch (error) {
+      console.error('Error fetching pinned content:', error);
+    }
+  };
+
+  const fetchPartnerManager = async () => {
+    if (!userCompany?.company_id) return;
+
+    try {
+      const company = companies.find(c => c.id === userCompany.company_id);
+      if (!company?.partner_manager_id) return;
+
+      const { data, error } = await supabase
+        .rpc('get_partner_manager_profile', { manager_id: company.partner_manager_id });
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setPartnerManager(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching partner manager:', error);
+    }
+  };
+
+  const filterContent = () => {
+    let filtered = items;
+
+    // Filter by job category tab
+    if (activeTab !== "all") {
+      filtered = filtered.filter(item => item.job_category === activeTab);
+    }
+
+    // Filter by search term with synonym support
+    if (searchTerm) {
+      const synonyms: Record<string, string[]> = {
+        'voice cloning': ['voice ai', 'voice synthesis', 'speech synthesis'],
+        'tts': ['text to speech', 'speech synthesis'],
+        'stt': ['speech to text', 'transcription'],
+        'api': ['integration', 'sdk', 'developer'],
+        'pricing': ['cost', 'price', 'billing'],
+        'demo': ['example', 'sample', 'tutorial']
       };
 
+      const searchTerms = [searchTerm.toLowerCase()];
+      Object.entries(synonyms).forEach(([key, values]) => {
+        if (key.includes(searchTerm.toLowerCase()) || values.some(v => v.includes(searchTerm.toLowerCase()))) {
+          searchTerms.push(key, ...values);
+        }
+      });
+
+      filtered = filtered.filter(item =>
+        searchTerms.some(term =>
+          item.title.toLowerCase().includes(term) ||
+          item.description?.toLowerCase().includes(term) ||
+          item.tags?.some(tag => tag.toLowerCase().includes(term))
+        )
+      );
+    }
+
+    // Apply filters
+    if (filters.persona && filters.persona.length > 0) {
+      filtered = filtered.filter(item => 
+        item.persona?.some(p => filters.persona!.includes(p))
+      );
+    }
+
+    if (filters.product_area && filters.product_area.length > 0) {
+      filtered = filtered.filter(item => 
+        item.product_area?.some(p => filters.product_area!.includes(p))
+      );
+    }
+
+    if (filters.content_type) {
+      filtered = filtered.filter(item => item.content_type === filters.content_type);
+    }
+
+    if (filters.level) {
+      filtered = filtered.filter(item => item.level === filters.level);
+    }
+
+    if (filters.is_featured) {
+      filtered = filtered.filter(item => item.is_featured);
+    }
+
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(item =>
+        selectedTags.every(tag => item.tags?.includes(tag))
+      );
+    }
+
+    setFilteredItems(filtered);
+  };
+
+  const handleItemClick = (item: ContentItem) => {
+    if (item.type === 'link') {
+      trackLinkClick(item.id);
+    }
+    window.open(item.url, '_blank');
+  };
+
+  const handlePin = async (item: ContentItem) => {
+    if (!user) return;
+
+    try {
       const { error } = await supabase
-        .from(newItem.type === 'link' ? 'links' : 'documents')
-        .insert([itemData]);
+        .from('pinned_content')
+        .insert({
+          user_id: user.id,
+          content_type: item.type,
+          content_id: item.id
+        });
 
       if (error) throw error;
 
+      setPinnedContentIds(prev => new Set([...prev, item.id]));
+      
       toast({
-        title: "Success",
-        description: `${newItem.type === 'link' ? 'Link' : 'Document'} added successfully`
+        title: "Pinned",
+        description: `${item.title} has been pinned to your dashboard`,
       });
-      setIsDialogOpen(false);
-      setNewItem({ type: 'link', title: "", url: "", company_id: "", tags: [] });
-      fetchItems();
     } catch (error) {
-      console.error("Error adding content:", error);
+      console.error('Error pinning content:', error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: `Failed to add ${newItem.type}`
+        description: "Failed to pin content",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnpin = async (item: ContentItem) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('pinned_content')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('content_type', item.type)
+        .eq('content_id', item.id);
+
+      if (error) throw error;
+
+      setPinnedContentIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
+      
+      toast({
+        title: "Unpinned",
+        description: `${item.title} has been unpinned`,
+      });
+    } catch (error) {
+      console.error('Error unpinning content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unpin content",
+        variant: "destructive",
       });
     }
   };
@@ -204,47 +323,10 @@ export default function Content() {
     }
   };
 
-  const handleItemClick = (item: ContentItem) => {
-    if (item.type === 'link') {
-      trackLinkClick(item.id);
-    }
-    window.open(item.url, '_blank');
-  };
-
   const getCompanyName = (companyId?: string) => {
     if (!companyId) return "Global";
     const company = companies.find(c => c.id === companyId);
     return company?.name || "Unknown Company";
-  };
-
-  const addTag = () => {
-    if (newTag && !newItem.tags.includes(newTag)) {
-      setNewItem(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag]
-      }));
-      setNewTag("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setNewItem(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
-  const toggleTagFilter = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedTags([]);
   };
 
   if (loading) {
@@ -260,221 +342,118 @@ export default function Content() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Content</h1>
-          <p className="text-muted-foreground">
-            Quick access to important links and documents for your work.
+          <h1 className="text-4xl font-bold mb-2">Partner Resource Hub</h1>
+          <p className="text-xl text-muted-foreground">
+            Everything you need to succeed with ElevenLabs
           </p>
         </div>
         
-        {canManageContent && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Content
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add New Content</DialogTitle>
-                <DialogDescription>
-                  Add a new link or document to the content library.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Type</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={newItem.type === 'link' ? 'default' : 'outline'}
-                      onClick={() => setNewItem(prev => ({ ...prev, type: 'link' }))}
-                      className="flex-1"
-                    >
-                      <Link className="h-4 w-4 mr-2" />
-                      Link
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={newItem.type === 'document' ? 'default' : 'outline'}
-                      onClick={() => setNewItem(prev => ({ ...prev, type: 'document' }))}
-                      className="flex-1"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Document
-                    </Button>
-                  </div>
-                </div>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          {/* Support Actions */}
+          <Button
+            variant="outline"
+            onClick={() => window.open('mailto:support@elevenlabs.io', '_blank')}
+          >
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Open Ticket
+          </Button>
+          
+          {partnerManager && (
+            <Button
+              variant="outline"
+              onClick={() => window.open(`mailto:${partnerManager.first_name}@elevenlabs.io`, '_blank')}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Contact Partner Manager
+            </Button>
+          )}
+          
+          {partnerManager?.scheduling_link && (
+            <Button
+              variant="outline"
+              onClick={() => window.open(partnerManager.scheduling_link!, '_blank')}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Book a Call
+            </Button>
+          )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter title"
-                    value={newItem.title}
-                    onChange={(e) => setNewItem(prev => ({ ...prev, title: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="url">{newItem.type === 'link' ? 'URL' : 'Document URL'}</Label>
-                  <Input
-                    id="url"
-                    type="url"
-                    placeholder={`Enter ${newItem.type === 'link' ? 'URL' : 'document URL'}`}
-                    value={newItem.url}
-                    onChange={(e) => setNewItem(prev => ({ ...prev, url: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company (Optional)</Label>
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-full justify-between"
-                      >
-                        {newItem.company_id
-                          ? companies.find(company => company.id === newItem.company_id)?.name
-                          : "Select company..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search companies..." />
-                        <CommandList>
-                          <CommandEmpty>No company found.</CommandEmpty>
-                          <CommandGroup>
-                            <CommandItem
-                              value=""
-                              onSelect={() => {
-                                setNewItem(prev => ({ ...prev, company_id: "" }));
-                                setOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  newItem.company_id === "" ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              Global (No Company)
-                            </CommandItem>
-                            {companies.map((company) => (
-                              <CommandItem
-                                key={company.id}
-                                value={company.name}
-                                onSelect={() => {
-                                  setNewItem(prev => ({ ...prev, company_id: company.id }));
-                                  setOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    newItem.company_id === company.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {company.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tags</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add a tag"
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addTag();
-                        }
-                      }}
-                    />
-                    <Button type="button" onClick={addTag} variant="outline">
-                      Add
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {newItem.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="text-xs hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">Add Content</Button>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+          {canManageContent && (
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Content
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Search and Filter Section */}
-      <div className="mb-6 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search content..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      {/* Search */}
+      <div className="mb-6">
+        <SmartSearch
+          onSearch={(term, searchFilters) => {
+            setSearchTerm(term);
+            setFilters(searchFilters);
+          }}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          items={items}
+          loading={loading}
+        />
+      </div>
 
-        {allTags.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Filter by tags:</Label>
-              {(searchTerm || selectedTags.length > 0) && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Clear filters
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {allTags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant={selectedTags.includes(tag) ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/80"
-                  onClick={() => toggleTagFilter(tag)}
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Job Categories Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="all">All Content</TabsTrigger>
+          <TabsTrigger value="sell">Sell</TabsTrigger>
+          <TabsTrigger value="integrate">Integrate</TabsTrigger>
+          <TabsTrigger value="market">Market</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all">
+          <p className="text-muted-foreground mb-4">
+            Browse all available resources and content
+          </p>
+        </TabsContent>
+        
+        <TabsContent value="sell">
+          <p className="text-muted-foreground mb-4">
+            Pitch decks, battlecards, pricing guidance, and sales enablement materials
+          </p>
+        </TabsContent>
+        
+        <TabsContent value="integrate">
+          <p className="text-muted-foreground mb-4">
+            SDKs, API keys, reference apps, and technical integration resources
+          </p>
+        </TabsContent>
+        
+        <TabsContent value="market">
+          <p className="text-muted-foreground mb-4">
+            Co-branding materials, campaigns, logos, and brand guidelines
+          </p>
+        </TabsContent>
+        
+        <TabsContent value="support">
+          <p className="text-muted-foreground mb-4">
+            FAQ, SLA information, contact routes, and support resources
+          </p>
+        </TabsContent>
+      </Tabs>
+
+      {/* Filters */}
+      <div className="mb-6">
+        <ContentFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          availableTags={allTags}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+        />
       </div>
 
       {/* Content Grid */}
@@ -486,75 +465,58 @@ export default function Content() {
               <h3 className="text-lg font-semibold mb-2">No content available</h3>
               <p className="text-muted-foreground mb-4">
                 {canManageContent 
-                  ? "Start by adding some links or documents to share with your team."
-                  : "Check back later for useful links and documents."
+                  ? "Start by adding some resources to share with your team."
+                  : "Check back later for useful resources and documents."
                 }
               </p>
             </div>
           ) : (
             <div>
-              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No content matches your search</h3>
-              <p className="text-muted-foreground">Try adjusting your search terms or filters.</p>
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No content matches your filters</h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your search terms or filters to find what you're looking for.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilters({});
+                  setSelectedTags([]);
+                  setActiveTab("all");
+                }}
+              >
+                Clear all filters
+              </Button>
             </div>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {item.type === 'link' ? (
-                      <Link className="h-5 w-5 text-primary" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-primary" />
-                    )}
-                    <CardTitle className="text-lg leading-tight">{item.title}</CardTitle>
-                  </div>
-                  {canManageContent && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item.id, item.type);
-                      }}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <CardDescription>
-                  {getCompanyName(item.company_id)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {item.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open {item.type === 'link' ? 'Link' : 'Document'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ContentCard
+              key={item.id}
+              item={item}
+              companyName={getCompanyName(item.company_id)}
+              canManage={canManageContent}
+              isPinned={pinnedContentIds.has(item.id)}
+              onOpen={handleItemClick}
+              onDelete={handleDelete}
+              onPin={handlePin}
+              onUnpin={handleUnpin}
+            />
           ))}
         </div>
+      )}
+
+      {/* Add Content Dialog */}
+      {canManageContent && (
+        <AddContentDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          companies={companies}
+          onSuccess={fetchItems}
+        />
       )}
     </div>
   );

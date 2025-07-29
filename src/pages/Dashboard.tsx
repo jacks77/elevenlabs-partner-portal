@@ -11,6 +11,7 @@ import { FileText, Link as LinkIcon, Users, BarChart3, Settings, LogOut, Send, X
 import OnboardingJourney from '@/components/OnboardingJourney';
 import { ElevenLabsTeamWidget } from '@/components/ElevenLabsTeamWidget';
 import { SocialFooter } from '@/components/SocialFooter';
+import PinnedContent from '@/components/PinnedContent';
 
 export default function Dashboard() {
   const { user, profile, memberships, loading, signOut } = useAuth();
@@ -120,6 +121,9 @@ export default function Dashboard() {
 
           {/* ElevenLabs Team Widget */}
           <ElevenLabsTeamWidget />
+
+          {/* Pinned Content */}
+          <PinnedContent />
 
           {/* Onboarding Journey - Show for companies in onboarding */}
           {onboardingCompanies.map((membership) => (

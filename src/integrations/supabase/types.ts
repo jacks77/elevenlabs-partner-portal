@@ -161,30 +161,60 @@ export type Database = {
       documents: {
         Row: {
           company_id: string | null
+          content_type: string | null
           created_at: string
+          description: string | null
           drive_file_id: string | null
           drive_url: string | null
           id: string
+          is_featured: boolean | null
+          job_category: string | null
+          level: string | null
+          persona: string[] | null
+          product_area: string[] | null
+          region: string[] | null
+          status: string | null
           tags: string[] | null
           title: string | null
+          version: string | null
         }
         Insert: {
           company_id?: string | null
+          content_type?: string | null
           created_at?: string
+          description?: string | null
           drive_file_id?: string | null
           drive_url?: string | null
           id?: string
+          is_featured?: boolean | null
+          job_category?: string | null
+          level?: string | null
+          persona?: string[] | null
+          product_area?: string[] | null
+          region?: string[] | null
+          status?: string | null
           tags?: string[] | null
           title?: string | null
+          version?: string | null
         }
         Update: {
           company_id?: string | null
+          content_type?: string | null
           created_at?: string
+          description?: string | null
           drive_file_id?: string | null
           drive_url?: string | null
           id?: string
+          is_featured?: boolean | null
+          job_category?: string | null
+          level?: string | null
+          persona?: string[] | null
+          product_area?: string[] | null
+          region?: string[] | null
+          status?: string | null
           tags?: string[] | null
           title?: string | null
+          version?: string | null
         }
         Relationships: [
           {
@@ -199,27 +229,60 @@ export type Database = {
       links: {
         Row: {
           company_id: string | null
+          content_type: string | null
           created_at: string
+          description: string | null
           id: string
+          is_featured: boolean | null
+          job_category: string | null
+          level: string | null
+          persona: string[] | null
+          product_area: string[] | null
+          region: string[] | null
+          status: string | null
           tags: string[] | null
           title: string | null
           url: string | null
+          version: string | null
+          youtube_id: string | null
         }
         Insert: {
           company_id?: string | null
+          content_type?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_featured?: boolean | null
+          job_category?: string | null
+          level?: string | null
+          persona?: string[] | null
+          product_area?: string[] | null
+          region?: string[] | null
+          status?: string | null
           tags?: string[] | null
           title?: string | null
           url?: string | null
+          version?: string | null
+          youtube_id?: string | null
         }
         Update: {
           company_id?: string | null
+          content_type?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_featured?: boolean | null
+          job_category?: string | null
+          level?: string | null
+          persona?: string[] | null
+          product_area?: string[] | null
+          region?: string[] | null
+          status?: string | null
           tags?: string[] | null
           title?: string | null
           url?: string | null
+          version?: string | null
+          youtube_id?: string | null
         }
         Relationships: [
           {
@@ -285,6 +348,30 @@ export type Database = {
           is_active?: boolean
           message?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinned_content: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -354,6 +441,33 @@ export type Database = {
           },
         ]
       }
+      search_analytics: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          results_count: number
+          search_term: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          results_count?: number
+          search_term: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          results_count?: number
+          search_term?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       security_audit_log: {
         Row: {
           action: string
@@ -418,6 +532,7 @@ export type Database = {
           has_changed_default_password: boolean
           is_super_admin: boolean | null
           last_name: string | null
+          scheduling_link: string | null
           title: string | null
           user_id: string
         }
@@ -427,6 +542,7 @@ export type Database = {
           has_changed_default_password?: boolean
           is_super_admin?: boolean | null
           last_name?: string | null
+          scheduling_link?: string | null
           title?: string | null
           user_id: string
         }
@@ -436,6 +552,7 @@ export type Database = {
           has_changed_default_password?: boolean
           is_super_admin?: boolean | null
           last_name?: string | null
+          scheduling_link?: string | null
           title?: string | null
           user_id?: string
         }
@@ -473,6 +590,15 @@ export type Database = {
       delete_user_account: {
         Args: { target_user_id: string }
         Returns: undefined
+      }
+      get_partner_manager_profile: {
+        Args: { manager_id: string }
+        Returns: {
+          user_id: string
+          first_name: string
+          last_name: string
+          scheduling_link: string
+        }[]
       }
       get_user_companies: {
         Args: Record<PropertyKey, never>
