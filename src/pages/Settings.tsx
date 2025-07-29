@@ -1,16 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, RefreshCw, Mail, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Shield, RefreshCw, Mail, AlertTriangle, CheckCircle, Percent } from 'lucide-react';
 
 export default function Settings() {
   const [bootstrapLoading, setBootstrapLoading] = useState(false);
   const [bootstrapResult, setBootstrapResult] = useState<any>(null);
+  const [commissionSettings, setCommissionSettings] = useState({
+    commission_registered: '5',
+    commission_bronze: '7',
+    commission_silver: '10',
+    commission_gold: '12',
+    commission_platinum: '15'
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchCommissionSettings();
+  }, []);
+
+  const fetchCommissionSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sitewide_settings')
+        .select('setting_key, setting_value')
+        .like('setting_key', 'commission_%');
+
+      if (error) throw error;
+
+      const settings = data.reduce((acc, item) => {
+        acc[item.setting_key] = item.setting_value;
+        return acc;
+      }, {} as any);
+
+      setCommissionSettings(prev => ({ ...prev, ...settings }));
+    } catch (error) {
+      console.error('Error fetching commission settings:', error);
+    }
+  };
+
+  const updateCommissionSettings = async () => {
+    setSettingsLoading(true);
+    try {
+      const updates = Object.entries(commissionSettings).map(([key, value]) => ({
+        setting_key: key,
+        setting_value: value
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('sitewide_settings')
+          .upsert(update, { onConflict: 'setting_key' });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Settings updated",
+        description: "Commission percentages have been saved successfully."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message || "Failed to update commission settings."
+      });
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const runBootstrap = async () => {
     setBootstrapLoading(true);
@@ -59,6 +124,65 @@ export default function Settings() {
               Configure system-wide settings and manage admin accounts
             </p>
           </div>
+
+          {/* Commission Settings */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Percent className="h-5 w-5 mr-2" />
+                Commission Percentages
+              </CardTitle>
+              <CardDescription>
+                Configure commission rates for each tier level
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(commissionSettings).map(([key, value]) => {
+                  const tierName = key.replace('commission_', '').replace(/^\w/, c => c.toUpperCase());
+                  return (
+                    <div key={key} className="space-y-2">
+                      <Label htmlFor={key}>{tierName}</Label>
+                      <div className="relative">
+                        <Input
+                          id={key}
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={value}
+                          onChange={(e) => setCommissionSettings(prev => ({
+                            ...prev,
+                            [key]: e.target.value
+                          }))}
+                          className="pr-8"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <span className="text-muted-foreground text-sm">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end">
+                <Button 
+                  onClick={updateCommissionSettings}
+                  disabled={settingsLoading}
+                  variant="hero"
+                >
+                  {settingsLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Commission Settings'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Bootstrap Section */}
           <Card className="shadow-card">
