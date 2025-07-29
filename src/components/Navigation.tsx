@@ -60,7 +60,7 @@ export function Navigation() {
 
   const getAvatarUrl = () => {
     if (user?.id) {
-      return `${supabase.storage.from('avatars').getPublicUrl(`${user.id}.jpg`).data.publicUrl}`;
+      return `${supabase.storage.from('avatars').getPublicUrl(`${user.id}/avatar.jpg`).data.publicUrl}`;
     }
     return undefined;
   };

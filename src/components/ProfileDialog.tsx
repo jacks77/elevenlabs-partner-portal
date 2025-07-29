@@ -82,7 +82,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
       // Handle avatar upload if there's a new file
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}.${fileExt}`;
+        const fileName = `${user.id}/avatar.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('avatars')

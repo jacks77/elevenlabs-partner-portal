@@ -103,7 +103,7 @@ export function ElevenLabsTeamWidget() {
 
   const getPartnerManagerAvatar = (managerId?: string) => {
     if (managerId) {
-      return `${supabase.storage.from('avatars').getPublicUrl(`${managerId}.jpg`).data.publicUrl}`;
+      return `${supabase.storage.from('avatars').getPublicUrl(`${managerId}/avatar.jpg`).data.publicUrl}`;
     }
     return undefined;
   };
