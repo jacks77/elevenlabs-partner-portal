@@ -7,7 +7,9 @@ import SearchAnalyticsDashboard from "@/components/SearchAnalyticsDashboard";
 import { CompanyManagement } from "@/components/CompanyManagement";
 import { NewsManagement } from "@/components/NewsManagement";
 import { NotificationManagement } from "@/components/NotificationManagement";
-import { BarChart3, Users, Building2, Newspaper, Bell } from "lucide-react";
+import { BarChart3, Users, Building2, Newspaper, Bell, UserCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export default function Admin() {
   const { profile } = useAuth();
@@ -19,7 +21,15 @@ export default function Admin() {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button asChild variant="outline">
+          <Link to="/admin/approvals">
+            <UserCheck className="h-4 w-4 mr-2" />
+            Pending Approvals
+          </Link>
+        </Button>
+      </div>
       
       <Tabs defaultValue="users" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
