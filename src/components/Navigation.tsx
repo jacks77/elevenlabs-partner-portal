@@ -41,6 +41,7 @@ export function Navigation() {
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/content', label: 'Content' },
     { path: '/lead-submission', label: 'Lead Submission' },
+    { path: '/invite-user', label: 'Invite User' },
     ...(isSuperAdmin ? [
       { path: '/admin', label: 'Admin' }
     ] : [])

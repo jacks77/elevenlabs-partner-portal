@@ -143,17 +143,15 @@ export default function Dashboard() {
               </Card>
             </Link>
 
-            {isSuperAdmin && (
-              <Link to="/admin">
-                <Card className="hover:shadow-elegant transition-shadow cursor-pointer h-full">
-                  <CardHeader className="text-center h-full flex flex-col justify-center">
-                    <Users className="h-8 w-8 mx-auto text-primary" />
-                    <CardTitle className="text-lg">Admin</CardTitle>
-                    <CardDescription>Manage system and users</CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-            )}
+            <Link to="/invite-user">
+              <Card className="hover:shadow-elegant transition-shadow cursor-pointer h-full">
+                <CardHeader className="text-center h-full flex flex-col justify-center">
+                  <Users className="h-8 w-8 mx-auto text-primary" />
+                  <CardTitle className="text-lg">Invite User</CardTitle>
+                  <CardDescription>Invite new users to your company</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
 
           {/* Social Media Feeds */}
