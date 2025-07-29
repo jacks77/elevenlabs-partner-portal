@@ -65,7 +65,7 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
             <SelectValue placeholder="Select track" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No Track</SelectItem>
+            <SelectItem value="none">No Track</SelectItem>
             <SelectItem value="Track 1">Track 1</SelectItem>
             <SelectItem value="Track 2">Track 2</SelectItem>
             <SelectItem value="Track 3">Track 3</SelectItem>
