@@ -343,13 +343,17 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
                 <div className="space-y-2">
                   <Label>Content Type</Label>
                   <Select
-                    value={newContent.content_type}
-                    onValueChange={(value) => setNewContent(prev => ({ ...prev, content_type: value }))}
+                    value={newContent.content_type || "none"}
+                    onValueChange={(value) => setNewContent(prev => ({ 
+                      ...prev, 
+                      content_type: value === "none" ? "" : value 
+                    }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Type" />
+                      <SelectValue placeholder="Select content type" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">No Type Selected</SelectItem>
                       {CONTENT_TYPES.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
@@ -362,13 +366,17 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
                 <div className="space-y-2">
                   <Label>Level</Label>
                   <Select
-                    value={newContent.level}
-                    onValueChange={(value) => setNewContent(prev => ({ ...prev, level: value }))}
+                    value={newContent.level || "none"}
+                    onValueChange={(value) => setNewContent(prev => ({ 
+                      ...prev, 
+                      level: value === "none" ? "" : value 
+                    }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Level" />
+                      <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">No Level Selected</SelectItem>
                       {LEVELS.map((level) => (
                         <SelectItem key={level} value={level}>
                           {level}

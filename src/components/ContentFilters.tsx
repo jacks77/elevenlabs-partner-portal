@@ -152,17 +152,17 @@ export default function ContentFilters({
         </Popover>
 
         <Select
-          value={filters.content_type || ""}
+          value={filters.content_type || "all"}
           onValueChange={(value) => onFiltersChange({
             ...filters,
-            content_type: value || undefined
+            content_type: value === "all" ? undefined : value
           })}
         >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Content Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Types</SelectItem>
+            <SelectItem value="all">All Types</SelectItem>
             {CONTENT_TYPES.map((type) => (
               <SelectItem key={type} value={type}>
                 {type}
@@ -172,17 +172,17 @@ export default function ContentFilters({
         </Select>
 
         <Select
-          value={filters.level || ""}
+          value={filters.level || "all"}
           onValueChange={(value) => onFiltersChange({
             ...filters,
-            level: value || undefined
+            level: value === "all" ? undefined : value
           })}
         >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Level" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Levels</SelectItem>
+            <SelectItem value="all">All Levels</SelectItem>
             {LEVELS.map((level) => (
               <SelectItem key={level} value={level}>
                 {level}
