@@ -501,9 +501,9 @@ export default function Admin() {
           </div>
 
           {/* Admin Tabs */}
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="approvals" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="approvals">Approvals</TabsTrigger>
               <TabsTrigger value="companies">Companies</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -511,7 +511,7 @@ export default function Admin() {
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="approvals" className="space-y-6">
 
               {/* Pending Approvals */}
               <Card className="shadow-card">
