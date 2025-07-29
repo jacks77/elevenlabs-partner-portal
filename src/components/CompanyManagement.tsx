@@ -108,9 +108,21 @@ export function CompanyManagement() {
 
   const createCompany = async () => {
     try {
+      // Map display track values to database values
+      const trackMapping: Record<string, string> = {
+        "Track 1: Referral/Reseller": "Track 1",
+        "Track 2: Solutions Partner": "Track 2", 
+        "Track 3: GSI": "Track 3"
+      };
+
+      const companyData = {
+        ...newCompany,
+        track: newCompany.track ? trackMapping[newCompany.track] || newCompany.track : null
+      };
+
       const { data, error } = await supabase
         .from('companies')
-        .insert([newCompany])
+        .insert([companyData])
         .select()
         .single();
 
