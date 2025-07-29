@@ -10,7 +10,8 @@ import {
   Pin,
   PinOff,
   Play,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 import { ContentItem } from "@/types/content";
 import { cn } from "@/lib/utils";
@@ -24,17 +25,19 @@ interface ContentCardProps {
   onDelete: (id: string, type: 'link' | 'document') => void;
   onPin: (item: ContentItem) => void;
   onUnpin: (item: ContentItem) => void;
+  onEdit?: (item: ContentItem) => void;
 }
 
 export default function ContentCard({ 
   item, 
   companyName, 
   canManage, 
-  isPinned,
+  isPinned, 
   onOpen, 
-  onDelete,
-  onPin,
-  onUnpin
+  onDelete, 
+  onPin, 
+  onUnpin,
+  onEdit 
 }: ContentCardProps) {
   const isNew = new Date(item.created_at) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const isYouTubeVideo = item.youtube_id || (item.url && item.url.includes('youtube.com'));
@@ -102,6 +105,17 @@ export default function ContentCard({
                 <Pin className="w-4 h-4" />
               )}
             </Button>
+            
+            {canManage && onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(item)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            )}
             
             {canManage && (
               <Button

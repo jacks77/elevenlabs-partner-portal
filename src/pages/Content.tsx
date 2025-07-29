@@ -13,6 +13,7 @@ import SmartSearch, { SearchFilters } from "@/components/SmartSearch";
 import ContentCard from "@/components/ContentCard";
 import ContentFilters from "@/components/ContentFilters";
 import AddContentDialog from "@/components/AddContentDialog";
+import EditContentDialog from "@/components/EditContentDialog";
 
 export default function ContentHub() {
   const [items, setItems] = useState<ContentItem[]>([]);
@@ -22,6 +23,8 @@ export default function ContentHub() {
   const [pinnedContentIds, setPinnedContentIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SearchFilters>({});
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -333,6 +336,11 @@ export default function ContentHub() {
     }
   };
 
+  const handleEdit = (item: ContentItem) => {
+    setEditingItem(item);
+    setIsEditDialogOpen(true);
+  };
+
   const getCompanyName = (companyId?: string) => {
     if (!companyId) return "Global";
     const company = companies.find(c => c.id === companyId);
@@ -505,6 +513,7 @@ export default function ContentHub() {
               onDelete={handleDelete}
               onPin={handlePin}
               onUnpin={handleUnpin}
+              onEdit={handleEdit}
             />
           ))}
         </div>
@@ -517,6 +526,17 @@ export default function ContentHub() {
           onOpenChange={setIsAddDialogOpen}
           companies={companies}
           onSuccess={fetchItems}
+        />
+      )}
+
+      {/* Edit Content Dialog */}
+      {canManageContent && (
+        <EditContentDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          companies={companies}
+          onSuccess={fetchItems}
+          item={editingItem}
         />
       )}
     </div>
