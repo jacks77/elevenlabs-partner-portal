@@ -59,14 +59,18 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
       if (user) {
         const userCompanyId = user.company?.id || 'none';
         setOriginalCompanyId(userCompanyId);
-        setValue('email', user.email);
-        setValue('first_name', user.first_name || '');
-        setValue('last_name', user.last_name || '');
-        setValue('title', user.title || '');
-        setValue('company_id', userCompanyId);
+        
+        // Reset form with user data
+        reset({
+          email: user.email,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          title: user.title || '',
+          company_id: userCompanyId
+        });
       }
     }
-  }, [open, user, setValue]);
+  }, [open, user, reset]);
 
   const fetchCompanies = async () => {
     try {
@@ -160,7 +164,7 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
 
       onUserUpdated();
       onOpenChange(false);
-      reset();
+      // Don't reset here as the dialog will close and reset when opened again
     } catch (error: any) {
       console.error('Error updating user:', error);
       toast({
