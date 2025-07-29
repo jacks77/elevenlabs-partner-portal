@@ -273,47 +273,57 @@ export function CompanyManagement() {
                       <SelectValue placeholder="Select track" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Technology">Technology</SelectItem>
-                      <SelectItem value="Consulting">Consulting</SelectItem>
-                      <SelectItem value="Referral">Referral</SelectItem>
+                      <SelectItem value="Track 1: Referral/Reseller">Track 1: Referral/Reseller</SelectItem>
+                      <SelectItem value="Track 2: Solutions Partner">Track 2: Solutions Partner</SelectItem>
+                      <SelectItem value="Track 3: GSI">Track 3: GSI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="commission-tier">Commission Tier</Label>
-                    <Select
-                      value={newCompany.commission_tier}
-                      onValueChange={(value) => setNewCompany(prev => ({ ...prev, commission_tier: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Registered">Registered</SelectItem>
-                        <SelectItem value="Silver">Silver</SelectItem>
-                        <SelectItem value="Gold">Gold</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Show Commission Tier if Track 1 or 2 is selected */}
+                  {(newCompany.track === "Track 1: Referral/Reseller" || newCompany.track === "Track 2: Solutions Partner") && (
+                    <div>
+                      <Label htmlFor="commission-tier">Commission Tier</Label>
+                      <Select
+                        value={newCompany.commission_tier}
+                        onValueChange={(value) => setNewCompany(prev => ({ ...prev, commission_tier: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Registered">Registered</SelectItem>
+                          <SelectItem value="Bronze">Bronze</SelectItem>
+                          <SelectItem value="Silver">Silver</SelectItem>
+                          <SelectItem value="Gold">Gold</SelectItem>
+                          <SelectItem value="Platinum">Platinum</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   
-                  <div>
-                    <Label htmlFor="certification-tier">Certification Tier</Label>
-                    <Select
-                      value={newCompany.certification_tier}
-                      onValueChange={(value) => setNewCompany(prev => ({ ...prev, certification_tier: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Registered">Registered</SelectItem>
-                        <SelectItem value="Silver">Silver</SelectItem>
-                        <SelectItem value="Gold">Gold</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Show Certification Tier if Track 2 or 3 is selected */}
+                  {(newCompany.track === "Track 2: Solutions Partner" || newCompany.track === "Track 3: GSI") && (
+                    <div>
+                      <Label htmlFor="certification-tier">Certification Tier</Label>
+                      <Select
+                        value={newCompany.certification_tier}
+                        onValueChange={(value) => setNewCompany(prev => ({ ...prev, certification_tier: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Registered">Registered</SelectItem>
+                          <SelectItem value="Bronze">Bronze</SelectItem>
+                          <SelectItem value="Silver">Silver</SelectItem>
+                          <SelectItem value="Gold">Gold</SelectItem>
+                          <SelectItem value="Platinum">Platinum</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-2">
