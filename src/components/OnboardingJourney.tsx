@@ -165,7 +165,7 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
           getStageStatus('kickoff') === 'completed' 
             ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
             : getStageStatus('kickoff') === 'scheduled'
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+            ? 'border-border bg-blue-50 dark:bg-blue-950/20'
             : 'border-border bg-card'
         }`}>
           <div className="flex items-center justify-between">
@@ -206,7 +206,7 @@ export default function OnboardingJourney({ companyId }: OnboardingJourneyProps)
           getStageStatus('technical') === 'completed' 
             ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
             : getStageStatus('technical') === 'scheduled'
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+            ? 'border-border bg-blue-50 dark:bg-blue-950/20'
             : 'border-border bg-card'
         }`}>
           <div className="flex items-center justify-between">
