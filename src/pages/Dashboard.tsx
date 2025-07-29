@@ -128,7 +128,7 @@ export default function Dashboard() {
                 <CardHeader className="text-center h-full flex flex-col justify-center">
                   <FileText className="h-8 w-8 mx-auto text-primary" />
                   <CardTitle className="text-lg">Content</CardTitle>
-                  <CardDescription>Manage content and resources</CardDescription>
+                  <CardDescription>Access content and resources</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
@@ -148,7 +148,7 @@ export default function Dashboard() {
                 <CardHeader className="text-center h-full flex flex-col justify-center">
                   <Users className="h-8 w-8 mx-auto text-primary" />
                   <CardTitle className="text-lg">Invite User</CardTitle>
-                  <CardDescription>Invite new users to your company</CardDescription>
+                  <CardDescription>Invite users from your company</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
