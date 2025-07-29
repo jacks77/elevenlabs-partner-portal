@@ -62,21 +62,31 @@ export default function ContentHub() {
 
   const fetchItems = async () => {
     try {
-      // Fetch links
-      const { data: linksData, error: linksError } = await supabase
+      // Fetch links (exclude drafts for non-admins)
+      const linksQuery = supabase
         .from("links")
         .select("*")
-        .neq('status', 'draft') // Hide draft content from non-admins
         .order("created_at", { ascending: false });
+      
+      if (!canManageContent) {
+        linksQuery.neq('status', 'draft');
+      }
+      
+      const { data: linksData, error: linksError } = await linksQuery;
 
       if (linksError) throw linksError;
 
-      // Fetch documents  
-      const { data: documentsData, error: documentsError } = await supabase
+      // Fetch documents (exclude drafts for non-admins)
+      const documentsQuery = supabase
         .from("documents")
         .select("*")
-        .neq('status', 'draft') // Hide draft content from non-admins
         .order("created_at", { ascending: false });
+      
+      if (!canManageContent) {
+        documentsQuery.neq('status', 'draft');
+      }
+      
+      const { data: documentsData, error: documentsError } = await documentsQuery;
 
       if (documentsError) throw documentsError;
 

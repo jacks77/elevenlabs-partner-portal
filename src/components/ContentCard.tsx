@@ -138,15 +138,22 @@ export default function ContentCard({
       <CardContent className="space-y-3">
         {/* YouTube Preview for YouTube videos */}
         {isYouTubeVideo && item.youtube_id && (
-          <div className="aspect-video rounded-md overflow-hidden bg-muted">
-            <img
-              src={`https://img.youtube.com/vi/${item.youtube_id}/maxresdefault.jpg`}
-              alt={`${item.title} preview`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg`;
-              }}
-            />
+          <div className="aspect-video rounded-md overflow-hidden bg-muted cursor-pointer" onClick={() => onOpen(item)}>
+            <div className="relative w-full h-full">
+              <img
+                src={`https://img.youtube.com/vi/${item.youtube_id}/maxresdefault.jpg`}
+                alt={`${item.title} preview`}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg`;
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                <div className="bg-red-600 rounded-full p-2">
+                  <Play className="h-6 w-6 text-white fill-current" />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

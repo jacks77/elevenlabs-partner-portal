@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +17,21 @@ interface ProfileFormData {
   last_name: string;
   title: string;
   email: string;
+  scheduling_link: string;
 }
 
 interface ProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const formSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  title: z.string().optional(),
+  email: z.string().email("Invalid email address"),
+  scheduling_link: z.string().url("Invalid URL").optional().or(z.literal("")),
+});
 
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { user, profile, refresh } = useAuth();
@@ -29,18 +40,28 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, setValue, reset } = useForm<ProfileFormData>();
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      title: "",
+      email: "",
+      scheduling_link: "",
+    },
+  });
 
   useEffect(() => {
-    if (open && user && profile) {
-      setValue('email', user.email || '');
-      setValue('first_name', profile.first_name || '');
-      setValue('last_name', profile.last_name || '');
-      setValue('title', profile.title || '');
-      setAvatarPreview(null);
-      setAvatarFile(null);
+    if (open && profile) {
+      form.reset({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        title: profile.title || "",
+        email: user?.email || "",
+        scheduling_link: (profile as any)?.scheduling_link || "",
+      });
     }
-  }, [open, user, profile, setValue]);
+  }, [open, profile, user, form]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,13 +82,14 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     try {
       // Update profile
       const { error: profileError } = await supabase
-        .from('user_profiles')
+        .from("user_profiles")
         .update({
-          first_name: data.first_name || null,
-          last_name: data.last_name || null,
-          title: data.title || null,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          title: data.title,
+          scheduling_link: data.scheduling_link || null,
         })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (profileError) throw profileError;
 
@@ -98,7 +120,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
 
       await refresh();
       onOpenChange(false);
-      reset();
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
@@ -129,7 +150,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Avatar Section */}
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
@@ -150,38 +171,71 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
             <p className="text-sm text-muted-foreground">Click the camera icon to change your profile picture</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register('email', { required: true })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="first_name">First Name</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="first_name"
-                {...register('first_name')}
+                id="email"
+                type="email"
+                {...form.register("email")}
               />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Last Name</Label>
-              <Input
-                id="last_name"
-                {...register('last_name')}
-              />
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              {...register('title')}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  {...form.register("first_name")}
+                />
+                {form.formState.errors.first_name && (
+                  <p className="text-sm text-destructive">{form.formState.errors.first_name.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  {...form.register("last_name")}
+                />
+                {form.formState.errors.last_name && (
+                  <p className="text-sm text-destructive">{form.formState.errors.last_name.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Your title/position"
+                {...form.register("title")}
+              />
+              {form.formState.errors.title && (
+                <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+              )}
+            </div>
+
+            {/* Scheduling Link - Only for ElevenLabs employees */}
+            {profile?.is_super_admin && (
+              <div className="space-y-2">
+                <Label htmlFor="scheduling_link">Scheduling Link (Calendly, etc.)</Label>
+                <Input
+                  id="scheduling_link"
+                  placeholder="https://calendly.com/yourname/meeting"
+                  {...form.register("scheduling_link")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add your scheduling link to enable "Book a Call" for your partner companies
+                </p>
+                {form.formState.errors.scheduling_link && (
+                  <p className="text-sm text-destructive">{form.formState.errors.scheduling_link.message}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
