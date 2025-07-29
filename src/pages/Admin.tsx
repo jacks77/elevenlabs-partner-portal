@@ -5,7 +5,8 @@ import { Navigate } from "react-router-dom";
 import { UserManagement } from "@/components/UserManagement";
 import { SecurityAuditLog } from "@/components/SecurityAuditLog";
 import SearchAnalyticsDashboard from "@/components/SearchAnalyticsDashboard";
-import { BarChart3, Users, Shield, Search } from "lucide-react";
+import { CompanyManagement } from "@/components/CompanyManagement";
+import { BarChart3, Users, Shield, Search, Building2 } from "lucide-react";
 
 export default function Admin() {
   const { profile } = useAuth();
@@ -20,14 +21,18 @@ export default function Admin() {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            User Management
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="companies" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Companies
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Security Audit
+            Security
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -35,12 +40,16 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
-            Search Analytics
+            Search
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
           <UserManagement />
+        </TabsContent>
+        
+        <TabsContent value="companies">
+          <CompanyManagement />
         </TabsContent>
         
         <TabsContent value="security">
