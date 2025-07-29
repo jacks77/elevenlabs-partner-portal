@@ -231,7 +231,7 @@ export function CompanyManagement() {
         
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link to="/onboarding-journeys">
+            <Link to="/admin/onboarding-journeys">
               <Route className="h-4 w-4 mr-2" />
               Onboarding Journeys
             </Link>
