@@ -367,18 +367,6 @@ export default function CreateUser() {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formData.isAdmin ? "admin" : "member"} onValueChange={(value) => setFormData(prev => ({ ...prev, isAdmin: value === "admin" }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="flex space-x-2 pt-4">
                   <Button type="submit" disabled={loading}>
