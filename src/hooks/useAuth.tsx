@@ -234,19 +234,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         open={showPasswordChange}
         onOpenChange={setShowPasswordChange}
         onSuccess={async () => {
+          // Close the dialog first to prevent any re-rendering issues
+          setShowPasswordChange(false);
+          
+          // Update local profile state immediately to prevent dialog from reappearing
+          setProfile(prev => prev ? { ...prev, has_changed_default_password: true } : null);
+          
           // Update the user profile to mark password as changed
           if (user) {
             await supabase
               .from('user_profiles')
               .update({ has_changed_default_password: true })
               .eq('user_id', user.id);
-            
-            // Update local profile state immediately to prevent dialog from reappearing
-            setProfile(prev => prev ? { ...prev, has_changed_default_password: true } : null);
           }
-          
-          // Close the dialog
-          setShowPasswordChange(false);
         }}
       />
     </AuthContext.Provider>
