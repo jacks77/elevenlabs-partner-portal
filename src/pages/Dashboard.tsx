@@ -168,24 +168,28 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {newsStories.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {newsStories.map((story) => (
-                      <div key={story.id} className="flex gap-4 p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
-                        {story.image_url && (
-                          <img 
-                            src={story.image_url} 
-                            alt={story.headline}
-                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm line-clamp-2">{story.headline}</h3>
-                          {story.subheading && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{story.subheading}</p>
+                      <div key={story.id} className="group cursor-pointer">
+                        <div className="space-y-4 p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                          {story.image_url && (
+                            <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+                              <img 
+                                src={story.image_url} 
+                                alt={story.headline}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
                           )}
-                          <span className="text-xs text-muted-foreground mt-2 block">
-                            {new Date(story.created_at).toLocaleDateString()}
-                          </span>
+                          <div className="space-y-2">
+                            <h3 className="font-bold text-xl leading-tight line-clamp-3">{story.headline}</h3>
+                            {story.subheading && (
+                              <p className="text-muted-foreground line-clamp-2">{story.subheading}</p>
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(story.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
