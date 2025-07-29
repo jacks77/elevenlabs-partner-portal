@@ -149,7 +149,7 @@ export function ElevenLabsTeamWidget() {
       {companies.map((company) => (
         <Card key={company.id} className="w-full shadow-card">
           <CardHeader>
-            <CardTitle>Your ElevenLabs Team</CardTitle>
+            <CardTitle>{company.name}'s ElevenLabs Team</CardTitle>
             {company.track && (
               <p className="text-sm text-muted-foreground">Track: {company.track}</p>
             )}
@@ -162,10 +162,10 @@ export function ElevenLabsTeamWidget() {
                   Your Partner Manager
                 </h3>
                 {company.partner_manager ? (
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
                       <AvatarImage src={getPartnerManagerAvatar(company.partner_manager_id)} />
-                      <AvatarFallback>{getPartnerManagerInitials(company.partner_manager)}</AvatarFallback>
+                      <AvatarFallback className="text-lg">{getPartnerManagerInitials(company.partner_manager)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{getPartnerManagerName(company.partner_manager)}</p>
@@ -187,7 +187,7 @@ export function ElevenLabsTeamWidget() {
               {/* Slack Channel Section */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                  Join Our Slack
+                  Stay In Touch
                 </h3>
                 {company.slack_channel_url ? (
                   <Button 
