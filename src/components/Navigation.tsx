@@ -42,9 +42,7 @@ export function Navigation() {
     { path: '/content', label: 'Content' },
     { path: '/lead-submission', label: 'Lead Submission' },
     ...(isSuperAdmin ? [
-      { path: '/admin', label: 'Admin' },
-      { path: '/settings', label: 'Settings' },
-      { path: '/analytics', label: 'Analytics' }
+      { path: '/admin', label: 'Admin' }
     ] : [])
   ];
 
