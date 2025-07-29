@@ -52,19 +52,19 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
 
   const fetchPartnerManagers = async () => {
     try {
-      // Get users who are members of Global Admins company
-      const { data: globalAdminsCompany } = await supabase
+      // Get users who are members of ElevenLabs company
+      const { data: elevenLabsCompany } = await supabase
         .from('companies')
         .select('id')
-        .eq('name', 'Global Admins')
+        .eq('name', 'ElevenLabs')
         .single();
 
-      if (globalAdminsCompany) {
+      if (elevenLabsCompany) {
         // First get company members
         const { data: members } = await supabase
           .from('company_members')
           .select('user_id')
-          .eq('company_id', globalAdminsCompany.id)
+          .eq('company_id', elevenLabsCompany.id)
           .eq('is_approved', true);
 
         if (members && members.length > 0) {
