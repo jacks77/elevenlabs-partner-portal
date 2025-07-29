@@ -64,26 +64,6 @@ export default function ContentFilters({
 
   return (
     <div className="space-y-4">
-      {/* Job Categories */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Jobs to be done:</Label>
-        <div className="flex flex-wrap gap-2">
-          {JOB_CATEGORIES.map((category) => (
-            <Badge
-              key={category}
-              variant={filters.job_category === category ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/10 capitalize"
-              onClick={() => onFiltersChange({
-                ...filters,
-                job_category: filters.job_category === category ? undefined : category
-              })}
-            >
-              {category}
-            </Badge>
-          ))}
-        </div>
-      </div>
-
       {/* Quick Filters Row */}
       <div className="flex flex-wrap gap-2">
         <Popover>
