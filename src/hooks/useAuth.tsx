@@ -70,30 +70,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
-      } else {
-        setProfile(profileData);
-        
-        // Check if this is a first-time login (created recently AND hasn't changed default password)
-        if (profileData && profileData.created_at && !profileData.has_changed_default_password) {
-          const createdAt = new Date(profileData.created_at);
-          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          
-          console.log('Checking password change requirement:', {
-            profileCreatedAt: createdAt,
-            oneDayAgo,
-            hasChangedPassword: profileData.has_changed_default_password,
-            shouldShowPrompt: createdAt > oneDayAgo && !profileData.has_changed_default_password
-          });
-          
-          if (createdAt > oneDayAgo) {
-            // If created within last 24 hours AND hasn't changed password, show dialog
-            console.log('Showing password change dialog for new user');
-            setShowPasswordChange(true);
-          }
-        }
       }
 
-      // Fetch company memberships
+      // Fetch company memberships first to check for ElevenLabs membership
       const { data: membershipData, error: membershipError } = await supabase
         .from('company_members')
         .select(`
@@ -104,8 +83,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (membershipError) {
         console.error('Error fetching memberships:', membershipError);
+        setMemberships([]);
       } else {
         setMemberships(membershipData || []);
+      }
+
+      // Check if user is a member of ElevenLabs company
+      const isElevenLabsMember = membershipData?.some(
+        membership => membership.company?.name === 'ElevenLabs'
+      );
+
+      // Set profile with super admin status if they're an ElevenLabs member
+      if (profileData) {
+        const enhancedProfile = {
+          ...profileData,
+          is_super_admin: profileData.is_super_admin || isElevenLabsMember
+        };
+        setProfile(enhancedProfile);
+        
+        // Check if this is a first-time login (created recently AND hasn't changed default password)
+        if (enhancedProfile.created_at && !enhancedProfile.has_changed_default_password) {
+          const createdAt = new Date(enhancedProfile.created_at);
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          
+          console.log('Checking password change requirement:', {
+            profileCreatedAt: createdAt,
+            oneDayAgo,
+            hasChangedPassword: enhancedProfile.has_changed_default_password,
+            shouldShowPrompt: createdAt > oneDayAgo && !enhancedProfile.has_changed_default_password
+          });
+          
+          if (createdAt > oneDayAgo) {
+            // If created within last 24 hours AND hasn't changed password, show dialog
+            console.log('Showing password change dialog for new user');
+            setShowPasswordChange(true);
+          }
+        }
+      } else {
+        // If no profile exists but user is ElevenLabs member, create a minimal profile with super admin
+        if (isElevenLabsMember) {
+          setProfile({
+            user_id: currentUser.id,
+            is_super_admin: true
+          });
+        } else {
+          setProfile(null);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
