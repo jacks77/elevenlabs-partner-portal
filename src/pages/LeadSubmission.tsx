@@ -3,9 +3,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
+import { init, Form } from '@feathery/react';
 
 export default function LeadSubmission() {
   const [leadSubmissionUrl, setLeadSubmissionUrl] = useState<string | null>(null);
+  const [formConfig, setFormConfig] = useState<{
+    formId: string;
+    params: Record<string, string>;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, memberships } = useAuth();
 
@@ -31,11 +36,45 @@ export default function LeadSubmission() {
 
       if (error) throw error;
       
-      setLeadSubmissionUrl(data?.lead_submission_url || null);
+      const url = data?.lead_submission_url;
+      setLeadSubmissionUrl(url);
+      
+      if (url) {
+        // Parse Feathery URL to extract formId and parameters
+        const parsedConfig = parseFeatheryUrl(url);
+        if (parsedConfig) {
+          setFormConfig(parsedConfig);
+          // Initialize Feathery with a default SDK key (this might need to be configured)
+          init('public'); // You may need to replace this with actual SDK key
+        }
+      }
     } catch (error) {
       console.error("Error fetching lead submission URL:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const parseFeatheryUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      
+      // Extract formId (6 characters after /to/)
+      const pathMatch = urlObj.pathname.match(/\/to\/([a-zA-Z0-9]{6})/);
+      if (!pathMatch) return null;
+      
+      const formId = pathMatch[1];
+      
+      // Extract URL parameters
+      const params: Record<string, string> = {};
+      urlObj.searchParams.forEach((value, key) => {
+        params[key] = value;
+      });
+      
+      return { formId, params };
+    } catch (error) {
+      console.error("Error parsing Feathery URL:", error);
+      return null;
     }
   };
 
@@ -50,7 +89,7 @@ export default function LeadSubmission() {
     );
   }
 
-  if (!leadSubmissionUrl) {
+  if (!leadSubmissionUrl || !formConfig) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto">
@@ -62,7 +101,10 @@ export default function LeadSubmission() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-muted-foreground mb-4">
-              No lead submission form has been configured for your company yet.
+              {!leadSubmissionUrl 
+                ? "No lead submission form has been configured for your company yet."
+                : "Unable to parse the lead submission form configuration."
+              }
             </p>
             <p className="text-sm text-muted-foreground">
               Please contact your administrator to set up the lead submission URL.
@@ -74,33 +116,31 @@ export default function LeadSubmission() {
   }
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Navigation overlay */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Lead Submission</h1>
-            <a
-              href={leadSubmissionUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Open in new window
-            </a>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6 text-center">
+        <h1 className="text-3xl font-bold mb-2">Lead Submission</h1>
+        <p className="text-muted-foreground">
+          Submit your leads through our partner portal
+        </p>
+        <div className="mt-4">
+          <a
+            href={leadSubmissionUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-primary hover:underline"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Open in new window
+          </a>
         </div>
       </div>
-      
-      {/* Full-screen iframe with top margin for nav */}
-      <iframe
-        src={leadSubmissionUrl}
-        className="w-full h-full pt-16"
-        title="Lead Submission Form"
-        frameBorder="0"
-        style={{ marginTop: '60px', height: 'calc(100vh - 60px)' }}
-      />
+
+      <div className="w-full">
+        <Form 
+          formId={formConfig.formId}
+          {...formConfig.params}
+        />
+      </div>
     </div>
   );
 }
