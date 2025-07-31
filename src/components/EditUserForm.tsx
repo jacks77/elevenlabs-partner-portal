@@ -232,7 +232,10 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={(e) => {
+            console.log('Form submission triggered');
+            handleSubmit(onSubmit)(e);
+          }} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
