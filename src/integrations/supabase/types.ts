@@ -76,7 +76,6 @@ export type Database = {
           kickoff_call_date: string | null
           lead_submission_url: string | null
           name: string
-          new_partner_manager_id: string | null
           partner_manager_id: string | null
           partner_salesforce_record: string | null
           slack_channel_url: string | null
@@ -94,7 +93,6 @@ export type Database = {
           kickoff_call_date?: string | null
           lead_submission_url?: string | null
           name: string
-          new_partner_manager_id?: string | null
           partner_manager_id?: string | null
           partner_salesforce_record?: string | null
           slack_channel_url?: string | null
@@ -112,7 +110,6 @@ export type Database = {
           kickoff_call_date?: string | null
           lead_submission_url?: string | null
           name?: string
-          new_partner_manager_id?: string | null
           partner_manager_id?: string | null
           partner_salesforce_record?: string | null
           slack_channel_url?: string | null
@@ -122,17 +119,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "companies_new_partner_manager_id_fkey"
-            columns: ["new_partner_manager_id"]
+            columns: ["partner_manager_id"]
             isOneToOne: false
             referencedRelation: "partner_managers"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "companies_partner_manager_id_fkey"
-            columns: ["partner_manager_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["user_id"]
           },
         ]
       }

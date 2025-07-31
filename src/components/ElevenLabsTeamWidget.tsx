@@ -50,11 +50,11 @@ export function ElevenLabsTeamWidget() {
           id,
           name,
           track,
-          new_partner_manager_id,
+          partner_manager_id,
           slack_channel_url,
           commission_tier,
           certification_tier,
-          partner_manager:partner_managers!companies_new_partner_manager_id_fkey (
+          partner_manager:partner_managers!companies_partner_manager_id_fkey (
             id,
             first_name,
             last_name,
