@@ -110,12 +110,19 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
         title: data.title,
       };
 
+      console.log('Updating user profile with data:', { userId: user.id, updates });
+
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update(updates)
         .eq('user_id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
+
+      console.log('Profile updated successfully');
 
       // Update email if changed
       if (data.email !== user.email) {
