@@ -105,9 +105,9 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
     try {
       // Update user profile
       const updates: any = {
-        first_name: data.first_name || null,
-        last_name: data.last_name || null,
-        title: data.title || null,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        title: data.title,
       };
 
       const { error: profileError } = await supabase
