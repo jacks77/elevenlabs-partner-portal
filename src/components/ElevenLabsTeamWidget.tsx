@@ -61,6 +61,9 @@ export function ElevenLabsTeamWidget() {
         `)
         .in('id', companyIds);
 
+      console.log('Companies data from query:', companiesData);
+      console.log('Partner manager query error:', error);
+
       if (error) throw error;
 
       // Fetch partner manager emails from auth using our admin-users edge function
