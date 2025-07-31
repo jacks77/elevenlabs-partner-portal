@@ -124,6 +124,13 @@ export type Database = {
             referencedRelation: "partner_managers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "companies_partner_manager_id_fkey"
+            columns: ["partner_manager_id"]
+            isOneToOne: false
+            referencedRelation: "partner_managers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       company_members: {
