@@ -88,13 +88,18 @@ export function EditUserForm({ user, open, onOpenChange, onUserUpdated }: EditUs
   const onSubmit = async (data: FormData) => {
     if (!user) return;
     
+    console.log('Form submitted with data:', data);
+    console.log('Original company ID:', originalCompanyId);
+    
     // Check if company has changed
     if (data.company_id !== originalCompanyId) {
+      console.log('Company changed, showing confirmation dialog');
       setPendingFormData(data);
       setShowCompanyChangeConfirm(true);
       return;
     }
     
+    console.log('Company not changed, proceeding with form submission');
     await submitForm(data);
   };
 
