@@ -76,6 +76,7 @@ export type Database = {
           kickoff_call_date: string | null
           lead_submission_url: string | null
           name: string
+          new_partner_manager_id: string | null
           partner_manager_id: string | null
           partner_salesforce_record: string | null
           slack_channel_url: string | null
@@ -93,6 +94,7 @@ export type Database = {
           kickoff_call_date?: string | null
           lead_submission_url?: string | null
           name: string
+          new_partner_manager_id?: string | null
           partner_manager_id?: string | null
           partner_salesforce_record?: string | null
           slack_channel_url?: string | null
@@ -110,6 +112,7 @@ export type Database = {
           kickoff_call_date?: string | null
           lead_submission_url?: string | null
           name?: string
+          new_partner_manager_id?: string | null
           partner_manager_id?: string | null
           partner_salesforce_record?: string | null
           slack_channel_url?: string | null
@@ -117,6 +120,13 @@ export type Database = {
           track?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "companies_new_partner_manager_id_fkey"
+            columns: ["new_partner_manager_id"]
+            isOneToOne: false
+            referencedRelation: "partner_managers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "companies_partner_manager_id_fkey"
             columns: ["partner_manager_id"]
@@ -347,6 +357,36 @@ export type Database = {
           id?: string
           is_active?: boolean
           message?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partner_managers: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          scheduling_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          scheduling_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          scheduling_link?: string | null
           updated_at?: string
         }
         Relationships: []

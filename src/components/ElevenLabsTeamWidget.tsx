@@ -8,10 +8,11 @@ import { ExternalLink, MessageSquare } from 'lucide-react';
 import { TierDisplay } from './TierDisplay';
 
 interface PartnerManager {
-  user_id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  scheduling_link?: string;
 }
 
 interface CompanyWithPartnerManager {
@@ -49,14 +50,16 @@ export function ElevenLabsTeamWidget() {
           id,
           name,
           track,
-          partner_manager_id,
+          new_partner_manager_id,
           slack_channel_url,
           commission_tier,
           certification_tier,
-          partner_manager:user_profiles!companies_partner_manager_id_fkey (
-            user_id,
+          partner_manager:partner_managers!companies_new_partner_manager_id_fkey (
+            id,
             first_name,
-            last_name
+            last_name,
+            email,
+            scheduling_link
           )
         `)
         .in('id', companyIds);
@@ -66,37 +69,8 @@ export function ElevenLabsTeamWidget() {
 
       if (error) throw error;
 
-      // Fetch partner manager emails from auth using our admin-users edge function
-      const companiesWithPartnerManagers = await Promise.all(
-        (companiesData || []).map(async (company) => {
-          if (company.partner_manager_id) {
-            try {
-              const { data: userData, error } = await supabase.functions.invoke('admin-users', {
-                body: { 
-                  action: 'get',
-                  userId: company.partner_manager_id 
-                }
-              });
-              
-              if (!error && userData?.user) {
-                return {
-                  ...company,
-                  partner_manager: {
-                    ...company.partner_manager,
-                    email: userData.user.email
-                  }
-                };
-              }
-            } catch (error) {
-              console.error('Error fetching partner manager email:', error);
-              return company;
-            }
-          }
-          return company;
-        })
-      );
-
-      setCompanies(companiesWithPartnerManagers);
+      // No need to fetch additional data since everything is in the partner_managers table
+      setCompanies(companiesData || []);
     } catch (error) {
       console.error('Error fetching company data:', error);
     } finally {
@@ -193,14 +167,12 @@ export function ElevenLabsTeamWidget() {
                 {company.partner_manager ? (
                   <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={getPartnerManagerAvatar(company.partner_manager_id)} />
+                      <AvatarImage src={getPartnerManagerAvatar(company.partner_manager.id)} />
                       <AvatarFallback className="text-lg">{getPartnerManagerInitials(company.partner_manager)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{getPartnerManagerName(company.partner_manager)}</p>
-                      {company.partner_manager.email && (
-                        <p className="text-sm text-muted-foreground">{company.partner_manager.email}</p>
-                      )}
+                      <p className="text-sm text-muted-foreground">{company.partner_manager.email}</p>
                     </div>
                   </div>
                 ) : (
