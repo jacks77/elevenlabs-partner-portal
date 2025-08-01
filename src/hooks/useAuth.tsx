@@ -94,15 +94,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setProfile(profileData);
         
         // Check if this is a first-time login (created recently AND hasn't changed default password)
-        if (enhancedProfile.created_at && !enhancedProfile.has_changed_default_password) {
-          const createdAt = new Date(enhancedProfile.created_at);
+        if (profileData.created_at && !profileData.has_changed_default_password) {
+          const createdAt = new Date(profileData.created_at);
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           
           console.log('Checking password change requirement:', {
             profileCreatedAt: createdAt,
             oneDayAgo,
-            hasChangedPassword: enhancedProfile.has_changed_default_password,
-            shouldShowPrompt: createdAt > oneDayAgo && !enhancedProfile.has_changed_default_password
+            hasChangedPassword: profileData.has_changed_default_password,
+            shouldShowPrompt: createdAt > oneDayAgo && !profileData.has_changed_default_password
           });
           
           if (createdAt > oneDayAgo) {

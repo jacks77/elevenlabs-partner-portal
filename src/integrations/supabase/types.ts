@@ -560,7 +560,7 @@ export type Database = {
           created_at: string
           first_name: string | null
           has_changed_default_password: boolean
-          is_super_admin: boolean | null
+          is_super_admin: boolean
           last_name: string | null
           scheduling_link: string | null
           title: string | null
@@ -570,7 +570,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           has_changed_default_password?: boolean
-          is_super_admin?: boolean | null
+          is_super_admin?: boolean
           last_name?: string | null
           scheduling_link?: string | null
           title?: string | null
@@ -580,7 +580,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           has_changed_default_password?: boolean
-          is_super_admin?: boolean | null
+          is_super_admin?: boolean
           last_name?: string | null
           scheduling_link?: string | null
           title?: string | null
