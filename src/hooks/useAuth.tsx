@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
+import { SessionManager, CSRFToken } from '@/lib/security';
+import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   user_id: string;
@@ -134,14 +136,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Defer user data fetching to avoid blocking auth state changes
+        // Handle session security integration
         if (currentSession?.user) {
+          // Update activity when user session is active
+          SessionManager.updateActivity();
+          
+          // Defer user data fetching to avoid blocking auth state changes
           setTimeout(() => {
             fetchUserData(currentSession.user);
           }, 0);
         } else {
+          // Clear security session data on logout
+          SessionManager.clear();
+          CSRFToken.clear();
           setProfile(null);
           setMemberships([]);
+        }
+        
+        // Log security events for authentication
+        if (event === 'SIGNED_IN') {
+          SessionManager.logSecurityEvent('user_signed_in', { user_id: currentSession?.user?.id });
+        } else if (event === 'SIGNED_OUT') {
+          SessionManager.logSecurityEvent('user_signed_out');
+        } else if (event === 'PASSWORD_RECOVERY') {
+          SessionManager.logSecurityEvent('password_recovery_initiated');
         }
         
         setLoading(false);
@@ -154,6 +172,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
+        SessionManager.updateActivity();
         fetchUserData(currentSession.user);
       }
       
@@ -197,6 +216,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signOut = async () => {
+    // Clear security session data before Supabase logout
+    SessionManager.clear();
+    CSRFToken.clear();
+    SessionManager.logSecurityEvent('user_logout_initiated');
+    
     await supabase.auth.signOut();
   };
 

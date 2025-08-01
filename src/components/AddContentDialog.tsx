@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Company, JOB_CATEGORIES, PERSONAS, PRODUCT_AREAS, REGIONS, CONTENT_TYPES, LEVELS, STATUS_OPTIONS } from "@/types/content";
+import { useSecurity } from "@/hooks/useSecurity";
 
 interface AddContentDialogProps {
   open: boolean;
@@ -43,6 +44,8 @@ interface NewContent {
 }
 
 export default function AddContentDialog({ open, onOpenChange, companies, onSuccess, availableTags = [] }: AddContentDialogProps) {
+  const { sanitizeForm, checkRateLimit } = useSecurity();
+  
   const [newContent, setNewContent] = useState<NewContent>({
     type: 'link',
     title: "",
@@ -97,6 +100,11 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Rate limiting check
+    if (!checkRateLimit('content-add', 'content creation')) {
+      return;
+    }
+    
     if (!newContent.title || !newContent.url) {
       toast({
         variant: "destructive",
@@ -107,38 +115,47 @@ export default function AddContentDialog({ open, onOpenChange, companies, onSucc
     }
 
     try {
+      // Sanitize form data
+      const sanitizedContent = sanitizeForm(newContent, {
+        title: { required: true, maxLength: 255 },
+        description: { maxLength: 1000 },
+        url: { required: true, maxLength: 2048 },
+        version: { maxLength: 50 },
+        youtube_id: { maxLength: 20 }
+      });
+
       // Extract YouTube ID if it's a YouTube video
-      const youtubeId = newContent.url.includes('youtube.com') || newContent.url.includes('youtu.be') 
-        ? extractYouTubeId(newContent.url) 
-        : newContent.youtube_id;
+      const youtubeId = sanitizedContent.url.includes('youtube.com') || sanitizedContent.url.includes('youtu.be') 
+        ? extractYouTubeId(sanitizedContent.url) 
+        : sanitizedContent.youtube_id;
 
       const contentData = {
-        title: newContent.title,
-        description: newContent.description || null,
-        [newContent.type === 'link' ? 'url' : 'drive_url']: newContent.url,
-        company_id: newContent.company_id || null,
-        tags: newContent.tags,
-        persona: newContent.persona.length > 0 ? newContent.persona : null,
-        job_category: newContent.job_category || null,
-        product_area: newContent.product_area.length > 0 ? newContent.product_area : null,
-        region: newContent.region.length > 0 ? newContent.region : null,
-        content_type: newContent.content_type || null,
-        level: newContent.level || null,
-        status: newContent.status,
-        version: newContent.version || null,
-        is_featured: newContent.is_featured,
-        ...(newContent.type === 'link' && youtubeId && { youtube_id: youtubeId })
+        title: sanitizedContent.title,
+        description: sanitizedContent.description || null,
+        [sanitizedContent.type === 'link' ? 'url' : 'drive_url']: sanitizedContent.url,
+        company_id: sanitizedContent.company_id || null,
+        tags: sanitizedContent.tags,
+        persona: sanitizedContent.persona.length > 0 ? sanitizedContent.persona : null,
+        job_category: sanitizedContent.job_category || null,
+        product_area: sanitizedContent.product_area.length > 0 ? sanitizedContent.product_area : null,
+        region: sanitizedContent.region.length > 0 ? sanitizedContent.region : null,
+        content_type: sanitizedContent.content_type || null,
+        level: sanitizedContent.level || null,
+        status: sanitizedContent.status,
+        version: sanitizedContent.version || null,
+        is_featured: sanitizedContent.is_featured,
+        ...(sanitizedContent.type === 'link' && youtubeId && { youtube_id: youtubeId })
       };
 
       const { error } = await supabase
-        .from(newContent.type === 'link' ? 'links' : 'documents')
+        .from(sanitizedContent.type === 'link' ? 'links' : 'documents')
         .insert([contentData]);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `${newContent.type === 'link' ? 'Link' : 'Document'} added successfully`
+        description: `${sanitizedContent.type === 'link' ? 'Link' : 'Document'} added successfully`
       });
 
       resetForm();

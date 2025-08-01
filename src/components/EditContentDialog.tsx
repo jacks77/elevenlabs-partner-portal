@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Company, ContentItem, JOB_CATEGORIES, PERSONAS, PRODUCT_AREAS, REGIONS, CONTENT_TYPES, LEVELS, STATUS_OPTIONS } from "@/types/content";
+import { useSecurity } from "@/hooks/useSecurity";
 
 interface EditContentDialogProps {
   open: boolean;
@@ -44,6 +45,8 @@ interface EditContent {
 }
 
 export default function EditContentDialog({ open, onOpenChange, companies, onSuccess, item, availableTags = [] }: EditContentDialogProps) {
+  const { sanitizeForm, checkRateLimit } = useSecurity();
+  
   const [editContent, setEditContent] = useState<EditContent>({
     type: 'link',
     title: "",
@@ -100,6 +103,11 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Rate limiting check
+    if (!checkRateLimit('content-edit', 'content editing')) {
+      return;
+    }
+    
     if (!editContent.title || !editContent.url || !item) {
       toast({
         variant: "destructive",
@@ -110,31 +118,40 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
     }
 
     try {
+      // Sanitize form data
+      const sanitizedContent = sanitizeForm(editContent, {
+        title: { required: true, maxLength: 255 },
+        description: { maxLength: 1000 },
+        url: { required: true, maxLength: 2048 },
+        version: { maxLength: 50 },
+        youtube_id: { maxLength: 20 }
+      });
+
       // Extract YouTube ID if it's a YouTube video
-      const youtubeId = editContent.url.includes('youtube.com') || editContent.url.includes('youtu.be') 
-        ? extractYouTubeId(editContent.url) 
-        : editContent.youtube_id;
+      const youtubeId = sanitizedContent.url.includes('youtube.com') || sanitizedContent.url.includes('youtu.be') 
+        ? extractYouTubeId(sanitizedContent.url) 
+        : sanitizedContent.youtube_id;
 
       const contentData = {
-        title: editContent.title,
-        description: editContent.description || null,
-        [editContent.type === 'link' ? 'url' : 'drive_url']: editContent.url,
-        company_id: editContent.company_id || null,
-        tags: editContent.tags,
-        persona: editContent.persona.length > 0 ? editContent.persona : null,
-        job_category: editContent.job_category || null,
-        product_area: editContent.product_area.length > 0 ? editContent.product_area : null,
-        region: editContent.region.length > 0 ? editContent.region : null,
-        content_type: editContent.content_type || null,
-        level: editContent.level || null,
-        status: editContent.status,
-        version: editContent.version || null,
-        is_featured: editContent.is_featured,
-        ...(editContent.type === 'link' && youtubeId && { youtube_id: youtubeId })
+        title: sanitizedContent.title,
+        description: sanitizedContent.description || null,
+        [sanitizedContent.type === 'link' ? 'url' : 'drive_url']: sanitizedContent.url,
+        company_id: sanitizedContent.company_id || null,
+        tags: sanitizedContent.tags,
+        persona: sanitizedContent.persona.length > 0 ? sanitizedContent.persona : null,
+        job_category: sanitizedContent.job_category || null,
+        product_area: sanitizedContent.product_area.length > 0 ? sanitizedContent.product_area : null,
+        region: sanitizedContent.region.length > 0 ? sanitizedContent.region : null,
+        content_type: sanitizedContent.content_type || null,
+        level: sanitizedContent.level || null,
+        status: sanitizedContent.status,
+        version: sanitizedContent.version || null,
+        is_featured: sanitizedContent.is_featured,
+        ...(sanitizedContent.type === 'link' && youtubeId && { youtube_id: youtubeId })
       };
 
       const { error } = await supabase
-        .from(editContent.type === 'link' ? 'links' : 'documents')
+        .from(sanitizedContent.type === 'link' ? 'links' : 'documents')
         .update(contentData)
         .eq('id', item.id);
 
@@ -142,7 +159,7 @@ export default function EditContentDialog({ open, onOpenChange, companies, onSuc
 
       toast({
         title: "Success",
-        description: `${editContent.type === 'link' ? 'Link' : 'Document'} updated successfully`
+        description: `${sanitizedContent.type === 'link' ? 'Link' : 'Document'} updated successfully`
       });
 
       onOpenChange(false);
