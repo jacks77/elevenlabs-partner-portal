@@ -58,7 +58,8 @@ serve(async (req) => {
       .eq('user_id', user.user.id)
       .single();
 
-    const isSuperAdmin = profileData?.is_super_admin || false;
+    // Security: Strict super admin check - only explicit database value, no fallbacks
+    const isSuperAdmin = profileData?.is_super_admin === true;
 
     if (checkError || !isSuperAdmin) {
       console.error('Profile error or not super admin:', { checkError, isSuperAdmin });

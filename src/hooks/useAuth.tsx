@@ -88,18 +88,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setMemberships(membershipData || []);
       }
 
-      // Check if user is a member of ElevenLabs company
-      const isElevenLabsMember = membershipData?.some(
-        membership => membership.company?.name === 'ElevenLabs'
-      );
-
-      // Set profile with super admin status if they're an ElevenLabs member
+      // Set profile data - ONLY use database value for is_super_admin
+      // Security: Never automatically grant super admin based on company membership
       if (profileData) {
-        const enhancedProfile = {
-          ...profileData,
-          is_super_admin: profileData.is_super_admin || isElevenLabsMember
-        };
-        setProfile(enhancedProfile);
+        setProfile(profileData);
         
         // Check if this is a first-time login (created recently AND hasn't changed default password)
         if (enhancedProfile.created_at && !enhancedProfile.has_changed_default_password) {
@@ -120,15 +112,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
       } else {
-        // If no profile exists but user is ElevenLabs member, create a minimal profile with super admin
-        if (isElevenLabsMember) {
-          setProfile({
-            user_id: currentUser.id,
-            is_super_admin: true
-          });
-        } else {
-          setProfile(null);
-        }
+        // No profile exists - set to null
+        // Security: Never auto-create profiles with admin privileges
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
