@@ -103,12 +103,11 @@ export default function AdminApprovals() {
         if (!data.success) throw new Error(data.error || 'User creation failed');
       }
 
-      // Update registration status
+      // Delete the registration record instead of updating status
+      // Once processed (approved or rejected), we no longer need the registration record
       const { error } = await supabase
         .from('registrations')
-        .update({
-          status: approve ? 'approved' : 'rejected'
-        })
+        .delete()
         .eq('id', registrationId);
 
       if (error) throw error;

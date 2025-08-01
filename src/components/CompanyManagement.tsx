@@ -190,41 +190,7 @@ export function CompanyManagement() {
         return;
       }
 
-      // Check for existing registrations that reference this company
-      const { data: registrations, error: regError } = await supabase
-        .from('registrations')
-        .select('id')
-        .eq('approved_company_id', company.id);
-
-      if (regError) throw regError;
-
-      if (registrations && registrations.length > 0) {
-        toast({
-          title: "Cannot delete company",
-          description: `Company has ${registrations.length} registration record(s). These need to be handled first.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Also check for registrations where this is the requested company
-      const { data: requestedRegistrations, error: reqRegError } = await supabase
-        .from('registrations')
-        .select('id')
-        .eq('requested_company_id', company.id);
-
-      if (reqRegError) throw reqRegError;
-
-      if (requestedRegistrations && requestedRegistrations.length > 0) {
-        toast({
-          title: "Cannot delete company", 
-          description: `Company has ${requestedRegistrations.length} pending registration request(s). These need to be handled first.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Safe to delete the company
+      // Safe to delete the company (registration records are now cleaned up automatically)
       const { error } = await supabase
         .from('companies')
         .delete()
