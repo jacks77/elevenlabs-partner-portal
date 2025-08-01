@@ -53,24 +53,39 @@ export function ElevenLabsTeamWidget() {
           partner_manager_id,
           slack_channel_url,
           commission_tier,
-          certification_tier,
-          partner_manager:partner_managers!partner_manager_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            scheduling_link
-          )
+          certification_tier
         `)
         .in('id', companyIds);
 
       console.log('Companies data from query:', companiesData);
-      console.log('Partner manager query error:', error);
+      console.log('Company query error:', error);
 
       if (error) throw error;
 
-      // No need to fetch additional data since everything is in the partner_managers table
-      setCompanies(companiesData || []);
+      // Fetch partner managers separately to avoid ambiguous foreign key relationships
+      const partnerManagerIds = companiesData?.map(c => c.partner_manager_id).filter(Boolean) || [];
+      let partnerManagers: PartnerManager[] = [];
+      
+      if (partnerManagerIds.length > 0) {
+        const { data: managersData, error: managersError } = await supabase
+          .from('partner_managers')
+          .select('*')
+          .in('id', partnerManagerIds);
+          
+        if (managersError) {
+          console.error('Error fetching partner managers:', managersError);
+        } else {
+          partnerManagers = managersData || [];
+        }
+      }
+
+      // Combine the data
+      const companiesWithManagers = companiesData?.map(company => ({
+        ...company,
+        partner_manager: partnerManagers.find(pm => pm.id === company.partner_manager_id)
+      })) || [];
+
+      setCompanies(companiesWithManagers);
     } catch (error) {
       console.error('Error fetching company data:', error);
     } finally {
