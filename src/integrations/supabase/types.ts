@@ -614,6 +614,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: boolean
       }
+      is_elevenlabs_employee: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       is_elevenlabs_member: {
         Args: Record<PropertyKey, never>
         Returns: boolean

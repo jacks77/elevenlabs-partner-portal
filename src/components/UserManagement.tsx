@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Search, Trash2, Edit } from 'lucide-react';
+import { UserPlus, Search, Trash2, Edit, Shield, ShieldOff } from 'lucide-react';
 import { EditUserForm } from './EditUserForm';
 import { Link } from 'react-router-dom';
 
@@ -186,6 +186,43 @@ export function UserManagement() {
     }
   };
 
+  const toggleSuperAdmin = async (userId: string, currentStatus: boolean, userCompany: string) => {
+    try {
+      // Check if user is from ElevenLabs
+      if (!userCompany.toLowerCase().includes('elevenlabs')) {
+        toast({
+          title: "Access denied",
+          description: "Super admin status can only be modified for ElevenLabs employees",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ is_super_admin: !currentStatus })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.id === userId ? { ...u, is_super_admin: !currentStatus } : u
+      ));
+
+      toast({
+        title: currentStatus ? "Super admin removed" : "Super admin granted",
+        description: `User ${currentStatus ? 'removed from' : 'promoted to'} super admin status`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!isSuperAdmin) {
     return (
       <Card>
@@ -287,6 +324,18 @@ export function UserManagement() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Super Admin Toggle Button - Only for ElevenLabs employees */}
+                  {user.company_name?.toLowerCase().includes('elevenlabs') && user.id !== profile?.user_id && (
+                    <Button
+                      size="sm"
+                      variant={user.is_super_admin ? "destructive" : "default"}
+                      onClick={() => toggleSuperAdmin(user.id, user.is_super_admin || false, user.company_name || '')}
+                      title={user.is_super_admin ? "Remove super admin" : "Grant super admin"}
+                    >
+                      {user.is_super_admin ? <ShieldOff className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                    </Button>
+                  )}
+                  
                   <Button
                     size="sm"
                     variant="outline"
