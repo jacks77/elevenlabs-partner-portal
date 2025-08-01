@@ -622,6 +622,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_security_event: {
+        Args: { action_type: string; details?: Json; target_user_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
