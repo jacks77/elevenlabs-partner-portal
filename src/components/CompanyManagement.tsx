@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, Plus, Edit, Users, Route, ExternalLink, Search } from "lucide-react";
+import { Building2, Plus, Edit, Users, Route, ExternalLink, Search, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -167,6 +168,41 @@ export function CompanyManagement() {
       toast({
         title: "Company updated",
         description: "Company information has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteCompany = async (company: Company) => {
+    try {
+      // Check if company has any members
+      if (company.member_count && company.member_count > 0) {
+        toast({
+          title: "Cannot delete company",
+          description: "Company has active members. Remove all members before deleting.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setCompanies(prev => prev.filter(c => c.id !== company.id));
+      
+      toast({
+        title: "Company deleted",
+        description: `${company.name} has been deleted successfully.`,
       });
     } catch (error: any) {
       toast({
@@ -401,13 +437,51 @@ export function CompanyManagement() {
                           )}
                         </div>
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(company)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(company)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={company.member_count && company.member_count > 0}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Company</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{company.name}"? This action cannot be undone.
+                                  {company.member_count && company.member_count > 0 && (
+                                    <span className="block mt-2 text-destructive font-medium">
+                                      This company has {company.member_count} active member(s). Remove all members before deleting.
+                                    </span>
+                                  )}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteCompany(company)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  disabled={company.member_count && company.member_count > 0}
+                                >
+                                  Delete Company
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </CardHeader>
                     
