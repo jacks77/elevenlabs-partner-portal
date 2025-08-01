@@ -68,7 +68,7 @@ export function CompanyManagement() {
         .from('companies')
         .select(`
           *,
-          partner_manager:partner_managers!partner_manager_id (
+          partner_manager:partner_managers!companies_partner_manager_id_fkey (
             first_name,
             last_name
           )
