@@ -20,9 +20,10 @@ interface Company {
 }
 
 interface PartnerManager {
-  user_id: string;
+  id: string;
   first_name?: string;
   last_name?: string;
+  email?: string;
 }
 
 interface EditCompanyFormProps {
@@ -52,33 +53,13 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
 
   const fetchPartnerManagers = async () => {
     try {
-      // Get users who are members of ElevenLabs company
-      const { data: elevenLabsCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('name', 'ElevenLabs')
-        .single();
+      const { data: managers } = await supabase
+        .from('partner_managers')
+        .select('id, first_name, last_name, email')
+        .order('first_name');
 
-      if (elevenLabsCompany) {
-        // First get company members
-        const { data: members } = await supabase
-          .from('company_members')
-          .select('user_id')
-          .eq('company_id', elevenLabsCompany.id)
-          .eq('is_approved', true);
-
-        if (members && members.length > 0) {
-          // Then get user profiles for those members
-          const userIds = members.map(m => m.user_id);
-          const { data: profiles } = await supabase
-            .from('user_profiles')
-            .select('user_id, first_name, last_name')
-            .in('user_id', userIds);
-
-          if (profiles) {
-            setPartnerManagers(profiles);
-          }
-        }
+      if (managers) {
+        setPartnerManagers(managers);
       }
     } catch (error) {
       console.error('Error fetching partner managers:', error);
@@ -153,10 +134,10 @@ export function EditCompanyForm({ company, onSave, onCancel }: EditCompanyFormPr
           <SelectContent>
             <SelectItem value="none">No Partner Manager</SelectItem>
             {partnerManagers.map((manager) => (
-              <SelectItem key={manager.user_id} value={manager.user_id}>
+              <SelectItem key={manager.id} value={manager.id}>
                 {manager.first_name && manager.last_name 
                   ? `${manager.first_name} ${manager.last_name}` 
-                  : manager.user_id}
+                  : manager.email || manager.id}
               </SelectItem>
             ))}
           </SelectContent>
