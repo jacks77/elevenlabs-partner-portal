@@ -11,8 +11,6 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, RefreshCw, Mail, AlertTriangle, CheckCircle, Percent } from 'lucide-react';
 
 export default function Settings() {
-  const [bootstrapLoading, setBootstrapLoading] = useState(false);
-  const [bootstrapResult, setBootstrapResult] = useState<any>(null);
   const [commissionSettings, setCommissionSettings] = useState({
     commission_registered: '5',
     commission_bronze: '7',
@@ -77,35 +75,6 @@ export default function Settings() {
     }
   };
 
-  const runBootstrap = async () => {
-    setBootstrapLoading(true);
-    setBootstrapResult(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('bootstrap-super-admin');
-
-      if (error) {
-        throw error;
-      }
-
-      setBootstrapResult(data);
-      
-      toast({
-        title: "Bootstrap completed",
-        description: data.message || "Super admin setup completed successfully."
-      });
-
-    } catch (error: any) {
-      console.error('Bootstrap error:', error);
-      toast({
-        variant: "destructive",
-        title: "Bootstrap failed",
-        description: error.message || "Failed to bootstrap super admin."
-      });
-    } finally {
-      setBootstrapLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -184,65 +153,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Bootstrap Section */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                Super Admin Bootstrap
-              </CardTitle>
-              <CardDescription>
-                Initialize or verify the super admin account setup
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  This function sets up the initial super admin account using environment variables.
-                  It's safe to run multiple times - it will only create the account if it doesn't exist.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex items-center space-x-4">
-                <Button 
-                  onClick={runBootstrap}
-                  disabled={bootstrapLoading}
-                  variant="hero"
-                >
-                  {bootstrapLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Running Bootstrap...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-4 w-4 mr-2" />
-                      Run Bootstrap
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {bootstrapResult && (
-                <Alert className="mt-4">
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p><strong>Status:</strong> {bootstrapResult.success ? 'Success' : 'Failed'}</p>
-                      <p><strong>Message:</strong> {bootstrapResult.message}</p>
-                      {bootstrapResult.adminEmail && (
-                        <p><strong>Admin Email:</strong> {bootstrapResult.adminEmail}</p>
-                      )}
-                      {bootstrapResult.reminder && (
-                        <p className="text-warning"><strong>Important:</strong> {bootstrapResult.reminder}</p>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Environment Info */}
           <Card className="shadow-card">
@@ -317,21 +227,14 @@ export default function Settings() {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium">2. Run Bootstrap</h4>
+                  <h4 className="font-medium">2. Create Super Admin</h4>
                   <p className="text-sm text-muted-foreground">
-                    Click the "Run Bootstrap" button above to create the initial super admin account.
+                    Create the initial super admin account manually through the user management interface.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium">3. Change Default Password</h4>
-                  <p className="text-sm text-muted-foreground">
-                    After bootstrapping, sign in with the admin account and immediately change the password.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="font-medium">4. Test Registration Flow</h4>
+                  <h4 className="font-medium">3. Test Registration Flow</h4>
                   <p className="text-sm text-muted-foreground">
                     Create a test registration to verify the approval and invitation workflow.
                   </p>
